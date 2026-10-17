@@ -244,6 +244,17 @@ RULES:
 3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
 4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
 5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+
+STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
+
+### 🟢 Beginner Overview
+[Explain simply in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
+
+### 🟡 Low-Level Technical
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles.]
+
+### 🟣 Deep Technical & Implementation
+[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
 `;
 
     try {
@@ -320,6 +331,17 @@ RULES:
 3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
 4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
 5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+
+STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
+
+### 🟢 Beginner Overview
+[Explain simply in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
+
+### 🟡 Low-Level Technical
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles.]
+
+### 🟣 Deep Technical & Implementation
+[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
 `;
 
     try {

@@ -241,9 +241,63 @@ export class ParserService {
       file.path.toLowerCase().includes('index') ||
       file.path.toLowerCase().includes('server');
 
+    // Extract first meaningful comment or docstring from top 10 lines
+    let topComment = '';
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('#') && line.length > 3) {
+        topComment = line.replace(/^[#\s*=]+/, '').trim();
+        break;
+      }
+      if ((line.startsWith('//') || line.startsWith('/*')) && line.length > 4) {
+        topComment = line.replace(/^[/*\s]+/, '').replace(/\*\/$/, '').trim();
+        break;
+      }
+      if (line.startsWith('"""') || line.startsWith("'''")) {
+        topComment = line.replace(/^["'\s]+/, '').replace(/["'\s]+$/, '').trim();
+        if (topComment) break;
+      }
+    }
+
+    // Determine smart 1-line purpose
+    const lowerPath = file.path.toLowerCase();
+    let oneLinePurpose = '';
+
+    if (topComment && topComment.length > 10 && topComment.length < 120 && !topComment.includes('<') && !topComment.includes('{')) {
+      oneLinePurpose = topComment;
+    } else if (lowerPath.endsWith('readme.md')) {
+      oneLinePurpose = 'Primary project documentation, setup instructions, and overview';
+    } else if (lowerPath.endsWith('architecture.md')) {
+      oneLinePurpose = 'Architecture specification, design decisions, and system blueprints';
+    } else if (lowerPath.endsWith('package.json') || lowerPath.endsWith('requirements.txt') || lowerPath.endsWith('cargo.toml') || lowerPath.endsWith('go.mod')) {
+      oneLinePurpose = 'Project manifest defining dependencies, scripts, and runtime requirements';
+    } else if (lowerPath.endsWith('dockerfile') || lowerPath.includes('docker-compose')) {
+      oneLinePurpose = 'Container specification and deployment configuration';
+    } else if (lowerPath.includes('service')) {
+      oneLinePurpose = `Core business logic service managing ${file.path.split('/').pop()?.replace(/\.[^.]+$/, '') || 'domain'} operations`;
+    } else if (lowerPath.includes('route') || lowerPath.includes('controller') || lowerPath.includes('api')) {
+      oneLinePurpose = 'API route definitions and HTTP request handler endpoints';
+    } else if (lowerPath.includes('model') || lowerPath.includes('schema') || lowerPath.includes('entity')) {
+      oneLinePurpose = 'Data model definitions, schema validation, and database entity structures';
+    } else if (lowerPath.includes('test')) {
+      oneLinePurpose = 'Automated unit or integration test suite verifying system behavior';
+    } else if (lowerPath.includes('component') || lowerPath.includes('view') || lowerPath.endsWith('.tsx') || lowerPath.endsWith('.jsx')) {
+      oneLinePurpose = 'User interface component rendering views and managing user interactions';
+    } else if (lowerPath.includes('util') || lowerPath.includes('helper')) {
+      oneLinePurpose = 'Shared utility helper functions and reusable routine library';
+    } else if (lowerPath.includes('script')) {
+      oneLinePurpose = `Automation and utility script for ${file.path.split('/').pop()?.replace(/\.[^.]+$/, '') || 'system tasks'}`;
+    } else if (isCritical) {
+      oneLinePurpose = `Primary application entry point initializing runtime and core modules`;
+    } else if (exports.length > 0) {
+      oneLinePurpose = `Module implementing ${file.language} logic exporting ${exports.slice(0, 3).join(', ')}`;
+    } else {
+      oneLinePurpose = `${file.language} source file containing ${keyFunctions.length > 0 ? keyFunctions.length + ' declared routines' : 'application definitions'}`;
+    }
+
     return {
       path: file.path,
-      responsibility: `Implements ${file.language} logic and exports ${exports.length > 0 ? exports.join(', ') : 'internal modules'}`,
+      responsibility: oneLinePurpose,
       language: file.language,
       lineCount: lines.length,
       importance: isCritical ? 'critical' : file.lineCount > 100 ? 'high' : 'medium',
@@ -251,7 +305,7 @@ export class ParserService {
       imports,
       keyFunctions,
       connectedFiles,
-      summary: `${file.path} (${file.language}, ${file.lineCount} lines) with ${keyFunctions.length} detected functions and ${imports.length} imports.`,
+      summary: `${file.path} (${file.language}, ${file.lineCount} lines): ${oneLinePurpose}`,
     };
   }
 }

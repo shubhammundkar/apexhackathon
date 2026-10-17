@@ -92,6 +92,8 @@ export interface RepositoryFileNode {
   type: 'file' | 'dir';
   size: number;
   language?: string;
+  responsibility?: string;
+  lineCount?: number;
   children?: RepositoryFileNode[];
 }
 

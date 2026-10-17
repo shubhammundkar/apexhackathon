@@ -246,9 +246,6 @@ export class RepositoryManager {
     const indexer = new IndexingService(config.CHUNK_SIZE_LINES, config.CHUNK_OVERLAP_LINES);
     indexer.indexFiles(downloadedFiles);
 
-    // Build directory tree
-    const fileTree = this.buildFileTree(downloadedFiles);
-
     // Parse dependencies and entrypoints
     const manifest = this.parserService.parseProject(
       downloadedFiles,
@@ -260,6 +257,9 @@ export class RepositoryManager {
     for (const f of downloadedFiles) {
       fileAnalysisMap.set(f.path, this.parserService.analyzeFileContent(f));
     }
+
+    // Build directory tree enriched with responsibilities
+    const fileTree = this.buildFileTree(downloadedFiles, fileAnalysisMap);
 
     // Step 6: Gemini Analysis
     this.updateJobProgress(job, 'analyzing', `Running structured Gemini architectural analysis...`, 90);
@@ -283,7 +283,7 @@ export class RepositoryManager {
           modelUsed: aiResult.modelUsed,
           overview: aiResult.overview,
           architecture: aiResult.architecture,
-          importantFiles: Array.from(fileAnalysisMap.values()).slice(0, 30),
+          importantFiles: Array.from(fileAnalysisMap.values()),
           executionFlows: aiResult.executionFlows,
           findings: aiResult.findings,
           dependenciesSummary: {
@@ -328,7 +328,7 @@ export class RepositoryManager {
     });
   }
 
-  private buildFileTree(files: SourceFile[]): RepositoryFileNode[] {
+  private buildFileTree(files: SourceFile[], fileAnalysisMap?: Map<string, FileAnalysis>): RepositoryFileNode[] {
     const rootNodes: RepositoryFileNode[] = [];
     const dirMap: Map<string, RepositoryFileNode> = new Map();
 
@@ -346,12 +346,15 @@ export class RepositoryManager {
         currentPath = currentPath ? `${currentPath}/${part}` : part;
 
         if (isFile) {
+          const analysis = fileAnalysisMap?.get(file.path);
           const fileNode: RepositoryFileNode = {
             path: file.path,
             name: part,
             type: 'file',
             size: file.size,
             language: file.language,
+            responsibility: analysis?.responsibility,
+            lineCount: file.lineCount,
           };
 
           if (parentPath && dirMap.has(parentPath)) {
@@ -431,7 +434,7 @@ export class RepositoryManager {
         mermaidDiagram: `graph TD\n  Client[Application Layer] --> Core[Core Engine]\n  Core --> Utilities[Utils & Helpers]`,
         dataFlowDescription: 'Standard execution flow through detected entrypoints.',
       },
-      importantFiles: Array.from(fileAnalysisMap.values()).slice(0, 25),
+      importantFiles: Array.from(fileAnalysisMap.values()),
       executionFlows: [
         {
           name: 'Main Entrypoint Execution',

@@ -30,6 +30,13 @@ import {
   Check,
   AlertTriangle,
   FileText,
+  Search,
+  BookOpen,
+  Cpu,
+  Code2,
+  ArrowRight,
+  FolderTree,
+  Sparkles,
 } from 'lucide-react';
 
 type TabType = 'overview' | 'architecture' | 'files' | 'flow' | 'dependencies' | 'findings';
@@ -47,6 +54,14 @@ export const WorkspacePage: React.FC = () => {
   const [isQaOpen, setIsQaOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+
+  // Files tab dual mode (Directory Catalog vs Code Inspector)
+  const [filesViewMode, setFilesViewMode] = useState<'directory' | 'inspector'>('directory');
+  const [fileSearchQuery, setFileSearchQuery] = useState('');
+  const [selectedLangFilter, setSelectedLangFilter] = useState('all');
+
+  // Architecture 3-Way Mode (Beginner, Low-Level Technical, Full Technical Blueprint)
+  const [archExplanationTier, setArchExplanationTier] = useState<'beginner' | 'lowlevel' | 'deep'>('beginner');
 
   useEffect(() => {
     if (!owner || !repo) return;
@@ -100,6 +115,30 @@ export const WorkspacePage: React.FC = () => {
     if (!owner || !repo) return;
     try {
       const fileData = await apiClient.getFileContent(owner, repo, filePath);
+
+      // Ensure fileData always has a 1-line responsibility banner
+      if (!fileData.analysis && analysis) {
+        const found = analysis.importantFiles?.find(
+          (f) => f.path.toLowerCase() === filePath.toLowerCase()
+        );
+        if (found) {
+          fileData.analysis = found;
+        } else {
+          fileData.analysis = {
+            path: filePath,
+            responsibility: `Implements logic and module exports for ${filePath.split('/').pop()}`,
+            language: fileData.language,
+            lineCount: fileData.lineCount,
+            importance: 'medium',
+            exports: [],
+            imports: [],
+            keyFunctions: [],
+            connectedFiles: [],
+            summary: `Source code file: ${filePath}`,
+          };
+        }
+      }
+
       setCurrentFileContent(fileData);
       setSelectedFilePath(filePath);
       if (lineRange) {
@@ -114,19 +153,74 @@ export const WorkspacePage: React.FC = () => {
 
   const handleSelectFile = (path: string) => {
     loadFile(path);
+    setFilesViewMode('inspector');
     setActiveTab('files');
   };
 
   const handleNavigateToFile = (path: string, startLine?: number, endLine?: number) => {
     const lineRange = startLine && endLine ? { start: startLine, end: endLine } : undefined;
     loadFile(path, lineRange);
+    setFilesViewMode('inspector');
     setActiveTab('files');
   };
 
   const handleNavigateToCitation = (citation: SearchCitation) => {
     loadFile(citation.filePath, { start: citation.startLine, end: citation.endLine });
+    setFilesViewMode('inspector');
     setActiveTab('files');
   };
+
+  // Extract all files with 1-line responsibility
+  const allFilesList = React.useMemo(() => {
+    if (!analysis) return [];
+    if (analysis.importantFiles && analysis.importantFiles.length > 0) {
+      return analysis.importantFiles.map((f) => ({
+        path: f.path,
+        language: f.language || 'text',
+        lineCount: f.lineCount,
+        responsibility: f.responsibility || `Implements logic for ${f.path.split('/').pop()}`,
+      }));
+    }
+    const extracted: { path: string; language: string; lineCount?: number; responsibility: string }[] = [];
+    const traverse = (nodes: RepositoryFileNode[]) => {
+      for (const n of nodes) {
+        if (n.type === 'file') {
+          extracted.push({
+            path: n.path,
+            language: n.language || 'text',
+            lineCount: n.lineCount,
+            responsibility: n.responsibility || `Source code file: ${n.name}`,
+          });
+        } else if (n.children) {
+          traverse(n.children);
+        }
+      }
+    };
+    traverse(fileTree);
+    return extracted;
+  }, [analysis, fileTree]);
+
+  // Filtered files list for directory search
+  const filteredFilesList = React.useMemo(() => {
+    return allFilesList.filter((f) => {
+      const matchesSearch =
+        fileSearchQuery === '' ||
+        f.path.toLowerCase().includes(fileSearchQuery.toLowerCase()) ||
+        f.responsibility.toLowerCase().includes(fileSearchQuery.toLowerCase());
+      const matchesLang =
+        selectedLangFilter === 'all' || f.language.toLowerCase() === selectedLangFilter.toLowerCase();
+      return matchesSearch && matchesLang;
+    });
+  }, [allFilesList, fileSearchQuery, selectedLangFilter]);
+
+  // Unique languages for filter chips
+  const uniqueLanguages = React.useMemo(() => {
+    const set = new Set<string>();
+    allFilesList.forEach((f) => {
+      if (f.language) set.add(f.language);
+    });
+    return Array.from(set).sort();
+  }, [allFilesList]);
 
   const handleAskQuestion = async (
     question: string,
@@ -489,48 +583,375 @@ export const WorkspacePage: React.FC = () => {
           )}
 
           {activeTab === 'architecture' && (
-            <div className="h-full flex flex-col p-4 sm:p-6 space-y-4">
-              <div className="bg-surface border border-surface-border rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-slate-100 text-sm">
-                    Pattern: {analysis.architecture.pattern}
-                  </h3>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    {analysis.architecture.description}
-                  </p>
+            <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+              {/* Architecture Header & 3-Way Mode Switcher */}
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Layers className="w-5 h-5 text-primary-400" />
+                      <h2 className="text-lg font-bold text-white tracking-tight">
+                        Architecture & System Blueprint
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Structural breakdown of {analysis.overview.projectName} grounded in repository source files.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-primary-600/20 text-primary-300 border border-primary-500/30">
+                      Pattern: {analysis.architecture.pattern}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3-Way Explanation Mode Selector */}
+                <div className="pt-3 border-t border-surface-border flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-accent-amber" />
+                    <span className="text-xs font-semibold text-slate-300">Explanation Mode:</span>
+                  </div>
+
+                  <div className="flex bg-surface-subtle p-1 rounded-lg border border-surface-border space-x-1">
+                    <button
+                      onClick={() => setArchExplanationTier('beginner')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                        archExplanationTier === 'beginner'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🟢</span>
+                      <span>Beginner (ELI5)</span>
+                    </button>
+
+                    <button
+                      onClick={() => setArchExplanationTier('lowlevel')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                        archExplanationTier === 'lowlevel'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🟡</span>
+                      <span>Low-Level Technical</span>
+                    </button>
+
+                    <button
+                      onClick={() => setArchExplanationTier('deep')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                        archExplanationTier === 'deep'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🟣</span>
+                      <span>Full Technical Blueprint</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Interactive Mermaid Diagram */}
-              <div className="flex-1 min-h-[450px]">
-                <MermaidDiagram chart={analysis.architecture.mermaidDiagram} />
-              </div>
+              {/* Dynamic Architecture Explanation Box Based on Selected Tier */}
+              {archExplanationTier === 'beginner' && (
+                <div className="bg-surface border border-emerald-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-emerald-950/20">
+                  <div className="flex items-center space-x-2 text-emerald-400 text-sm font-bold">
+                    <BookOpen className="w-4 h-4" />
+                    <span>How This Project Works (Beginner / Plain English)</span>
+                  </div>
 
-              {/* Data Flow Description */}
-              {analysis.architecture.dataFlowDescription && (
-                <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Data Flow Execution Trace
-                  </span>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {analysis.architecture.dataFlowDescription}
+                  <p className="text-sm text-slate-200 leading-relaxed font-sans">
+                    <strong>{analysis.overview.projectName}</strong> is built to solve a clear problem:{' '}
+                    <span className="text-emerald-300 font-medium">{analysis.overview.problemSolved}</span>.
+                    Think of the application as a coordinated team: the frontend acts as the welcoming storefront that gathers user instructions; the backend server operates as the kitchen manager dispatching tasks; and the database or AI models serve as the intelligence hub providing instant, verified results.
                   </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
+                      <div className="text-xs font-bold text-primary-300">1. User Interface (Frontend)</div>
+                      <p className="text-[11px] text-slate-400">
+                        Presents the interactive dashboard where you enter queries, inspect files, and browse diagrams.
+                      </p>
+                    </div>
+                    <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
+                      <div className="text-xs font-bold text-accent-cyan">2. Core Server (Backend)</div>
+                      <p className="text-[11px] text-slate-400">
+                        Processes requests, coordinates security, and runs application logic.
+                      </p>
+                    </div>
+                    <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
+                      <div className="text-xs font-bold text-accent-amber">3. Reasoning & Storage</div>
+                      <p className="text-[11px] text-slate-400">
+                        Uses AI intelligence and indexing to provide exact citations without guessing.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {archExplanationTier === 'lowlevel' && (
+                <div className="bg-surface border border-amber-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-amber-950/20">
+                  <div className="flex items-center space-x-2 text-amber-400 text-sm font-bold">
+                    <Cpu className="w-4 h-4" />
+                    <span>Low-Level System Mechanics & Component Interaction</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                    The codebase follows a <strong>{analysis.architecture.pattern}</strong> style.{' '}
+                    {analysis.architecture.description}
+                  </p>
+
+                  <div className="bg-surface-subtle border border-surface-border rounded-lg p-4 space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                      Data Flow & Request Lifecycle
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {analysis.architecture.dataFlowDescription ||
+                        'Clients issue requests to entrypoints, which serialize through middleware pipelines, execute business logic services, query cache/indexing layers, and stream back typed payloads.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {archExplanationTier === 'deep' && (
+                <div className="bg-surface border border-purple-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-purple-950/20">
+                  <div className="flex items-center space-x-2 text-purple-400 text-sm font-bold">
+                    <Code2 className="w-4 h-4" />
+                    <span>Full Technical Blueprint & Architectural Layers</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Systems architecture powered by{' '}
+                    <span className="text-purple-300 font-mono">
+                      {analysis.overview.detectedStack.map((s) => s.name).join(', ')}
+                    </span>
+                    . Concurrency and async I/O execute across {analysis.stats.indexedFiles} indexed source files with strict type contracts.
+                  </p>
+
+                  {/* Architecture Layers Breakdown */}
+                  {analysis.architecture.layers.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      {analysis.architecture.layers.map((layer) => (
+                        <div key={layer.name} className="p-4 rounded-lg bg-surface-subtle border border-surface-border space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-xs text-slate-200">{layer.name}</span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-900/30 text-purple-300 border border-purple-500/30 uppercase">
+                              {layer.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400">{layer.description}</p>
+                          {layer.files.length > 0 && (
+                            <div className="pt-1 flex flex-wrap gap-1.5">
+                              {layer.files.slice(0, 4).map((f) => (
+                                <button
+                                  key={f}
+                                  onClick={() => handleNavigateToFile(f)}
+                                  className="text-[10px] font-mono text-primary-400 hover:underline bg-surface border border-surface-border px-1.5 py-0.5 rounded"
+                                >
+                                  {f}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interactive Mermaid Diagram Canvas */}
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <FolderTree className="w-4 h-4 text-primary-400" />
+                    <h3 className="font-bold text-sm text-slate-100">
+                      Architecture Flowchart & Component Wiring
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Interactive SVG diagram</span>
+                </div>
+
+                <div className="min-h-[420px] bg-surface-subtle/40 rounded-lg p-2 border border-surface-border">
+                  <MermaidDiagram chart={analysis.architecture.mermaidDiagram} />
+                </div>
+
+                {/* Executive Takeaway Under Diagram */}
+                <div className="p-4 rounded-lg bg-primary-950/20 border border-primary-500/20 text-xs text-slate-300 flex items-start space-x-2.5">
+                  <span className="text-base">💡</span>
+                  <div>
+                    <strong className="text-primary-300">Architecture at a Glance:</strong> Just by reading this diagram, others can understand that <strong>{analysis.overview.projectName}</strong> organizes its logic using a <em>{analysis.architecture.pattern}</em> architecture to execute <em>{analysis.overview.problemSolved}</em>.
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {activeTab === 'files' && (
             <div className="h-full flex flex-col">
-              {currentFileContent ? (
-                <CodeViewer
-                  file={currentFileContent}
-                  highlightLines={highlightLines}
-                  onNavigateToFile={handleSelectFile}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                  Select a file from the sidebar to inspect its implementation.
+              {/* Files Tab Header Bar with Mode Switcher */}
+              <div className="h-12 border-b border-surface-border px-4 flex items-center justify-between bg-surface/90 backdrop-blur-sm flex-shrink-0">
+                <div className="flex items-center space-x-2">
+                  <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
+                    <button
+                      onClick={() => setFilesViewMode('directory')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                        filesViewMode === 'directory'
+                          ? 'bg-primary-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <FolderTree className="w-3.5 h-3.5" />
+                      <span>File Structure & Purpose Guide ({allFilesList.length})</span>
+                    </button>
+
+                    <button
+                      onClick={() => setFilesViewMode('inspector')}
+                      disabled={!currentFileContent}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                        filesViewMode === 'inspector'
+                          ? 'bg-primary-600 text-white shadow-sm'
+                          : currentFileContent
+                          ? 'text-slate-400 hover:text-slate-200'
+                          : 'text-slate-600 cursor-not-allowed'
+                      }`}
+                    >
+                      <FileCode className="w-3.5 h-3.5" />
+                      <span className="truncate max-w-[180px]">
+                        {selectedFilePath ? selectedFilePath.split('/').pop() : 'Source Code Inspector'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {filesViewMode === 'inspector' ? (
+                  <button
+                    onClick={() => setFilesViewMode('directory')}
+                    className="text-xs text-primary-400 hover:text-primary-300 flex items-center space-x-1 font-medium transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to File Structure</span>
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-400 hidden sm:inline">
+                    Click any file to inspect code with line-by-line responsibility
+                  </span>
+                )}
+              </div>
+
+              {/* Content Mode 1: Directory Catalog with 1-line Purpose */}
+              {filesViewMode === 'directory' && (
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  {/* Search and Filter Controls */}
+                  <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="relative w-full sm:max-w-md">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search files by path or responsibility..."
+                          value={fileSearchQuery}
+                          onChange={(e) => setFileSearchQuery(e.target.value)}
+                          className="w-full bg-surface-subtle border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
+                        />
+                      </div>
+
+                      {/* Language Filter Chips */}
+                      <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                        <button
+                          onClick={() => setSelectedLangFilter('all')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                            selectedLangFilter === 'all'
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-surface-subtle text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          All ({allFilesList.length})
+                        </button>
+                        {uniqueLanguages.map((lang) => (
+                          <button
+                            key={lang}
+                            onClick={() => setSelectedLangFilter(lang)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${
+                              selectedLangFilter === lang
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-surface-subtle text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {lang}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* File Structure Catalog List */}
+                  <div className="space-y-3">
+                    {filteredFilesList.length === 0 ? (
+                      <div className="bg-surface border border-surface-border rounded-xl p-8 text-center text-xs text-slate-400">
+                        No files matching "{fileSearchQuery}".
+                      </div>
+                    ) : (
+                      filteredFilesList.map((file) => (
+                        <div
+                          key={file.path}
+                          className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center space-x-2.5 truncate">
+                              <FileCode className="w-4 h-4 text-primary-400 flex-shrink-0" />
+                              <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors">
+                                {file.path}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border">
+                                {file.language}
+                              </span>
+                              {file.lineCount && (
+                                <span className="text-[11px] text-slate-500 font-mono">
+                                  {file.lineCount} lines
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleSelectFile(file.path)}
+                              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all"
+                            >
+                              <span>Inspect Code</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* 1-Line Responsibility Banner (Matching Screenshot exactly) */}
+                          <div className="flex items-start space-x-2 text-xs bg-surface-subtle/80 border border-surface-border/80 px-3 py-2 rounded-lg">
+                            <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                            <div className="leading-snug">
+                              <span className="font-semibold text-slate-200 mr-1.5">Responsibility:</span>
+                              <span className="text-slate-300">{file.responsibility}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Content Mode 2: Source Code Inspector */}
+              {filesViewMode === 'inspector' && (
+                <div className="flex-1 overflow-hidden">
+                  {currentFileContent ? (
+                    <CodeViewer
+                      file={currentFileContent}
+                      highlightLines={highlightLines}
+                      onNavigateToFile={handleSelectFile}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-xs text-slate-500">
+                      Select a file from the list or sidebar to inspect its implementation.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

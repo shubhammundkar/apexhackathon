@@ -41,6 +41,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, selectedPath, onSelectFile, l
     <div>
       <div
         onClick={handleClick}
+        title={node.responsibility ? `${node.path} — ${node.responsibility}` : node.path}
         style={{ paddingLeft: `${level * 14 + 10}px` }}
         className={`group flex items-center justify-between py-1.5 pr-2.5 cursor-pointer text-xs rounded-md transition-colors select-none ${
           isSelected
