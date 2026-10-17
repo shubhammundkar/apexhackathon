@@ -88,4 +88,77 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
+
+  askQuestionStream: async (
+    owner: string,
+    repo: string,
+    params: { question: string; filePath?: string; apiKey?: string },
+    callbacks: {
+      onCitations?: (citations: any[]) => void;
+      onChunk?: (text: string) => void;
+    }
+  ): Promise<QAResponse> => {
+    const res = await fetch(`/api/repositories/${owner}/${repo}/questions/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    if (!res.ok) {
+      const errorJson = await res.json().catch(() => ({}));
+      throw new ApiError(errorJson.message || 'Streaming failed', res.status, errorJson.error);
+    }
+
+    const reader = res.body?.getReader();
+    const decoder = new TextDecoder();
+    if (!reader) throw new Error('Response stream not readable');
+
+    let fullAnswer = '';
+    let citations: any[] = [];
+    let modelUsed = 'gemini-2.5-flash';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const eventMatch = line.match(/^event:\s*(.+)$/m);
+        const dataMatch = line.match(/^data:\s*(.+)$/m);
+
+        const event = eventMatch ? eventMatch[1].trim() : 'message';
+        const rawData = dataMatch ? dataMatch[1].trim() : '';
+
+        try {
+          const data = rawData ? JSON.parse(rawData) : null;
+          if (event === 'citations' && data) {
+            citations = data;
+            callbacks.onCitations?.(data);
+          } else if (event === 'chunk' && data?.text) {
+            fullAnswer += data.text;
+            callbacks.onChunk?.(data.text);
+          } else if (event === 'done' && data) {
+            modelUsed = data.modelUsed || modelUsed;
+          } else if (event === 'error' && data) {
+            throw new Error(data.message || 'Stream error');
+          }
+        } catch (e: any) {
+          if (event === 'error') throw e;
+        }
+      }
+    }
+
+    return {
+      question: params.question,
+      answer: fullAnswer,
+      citations,
+      modelUsed,
+      answeredAt: new Date().toISOString(),
+    };
+  },
 };

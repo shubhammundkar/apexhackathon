@@ -223,3 +223,55 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
     next(err);
   }
 });
+
+apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Request, res: Response) => {
+  const repoId = getRepoId(req);
+  const repo = repositoryManager.getRepository(repoId);
+  if (!repo) {
+    return res.status(404).json({
+      error: 'REPOSITORY_NOT_FOUND',
+      message: `Repository ${repoId} not found`,
+    });
+  }
+
+  const parseResult = AskQuestionRequestSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'VALIDATION_ERROR',
+      message: parseResult.error.errors[0]?.message || 'Invalid question format',
+    });
+  }
+
+  const { question, filePath, apiKey } = parseResult.data;
+  const citations = repo.indexer.search(question, 6, filePath);
+
+  // Set SSE Headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  // Send initial citations
+  res.write(`event: citations\ndata: ${JSON.stringify(citations)}\n\n`);
+
+  try {
+    const geminiService = repositoryManager.getGeminiService();
+    const finalAnswer = await geminiService.answerQuestionStream(
+      question,
+      citations,
+      repo.metadata,
+      (textChunk) => {
+        res.write(`event: chunk\ndata: ${JSON.stringify({ text: textChunk })}\n\n`);
+      },
+      filePath,
+      apiKey
+    );
+
+    res.write(`event: done\ndata: ${JSON.stringify(finalAnswer)}\n\n`);
+    res.end();
+  } catch (err: any) {
+    res.write(`event: error\ndata: ${JSON.stringify({ message: err.message || 'Error generating streaming response' })}\n\n`);
+    res.end();
+  }
+});

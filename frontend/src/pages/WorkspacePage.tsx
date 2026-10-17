@@ -128,14 +128,27 @@ export const WorkspacePage: React.FC = () => {
     setActiveTab('files');
   };
 
-  const handleAskQuestion = async (question: string, filePath?: string) => {
+  const handleAskQuestion = async (
+    question: string,
+    filePath?: string,
+    onChunk?: (chunk: string) => void,
+    onCitations?: (citations: SearchCitation[]) => void
+  ) => {
     if (!owner || !repo) throw new Error('Repository is missing');
     const userApiKey = localStorage.getItem('gemini_custom_api_key') || undefined;
-    return await apiClient.askQuestion(owner, repo, {
-      question,
-      filePath,
-      apiKey: userApiKey,
-    });
+    return await apiClient.askQuestionStream(
+      owner,
+      repo,
+      {
+        question,
+        filePath,
+        apiKey: userApiKey,
+      },
+      {
+        onChunk,
+        onCitations,
+      }
+    );
   };
 
   const copyToClipboard = (text: string, id: string) => {

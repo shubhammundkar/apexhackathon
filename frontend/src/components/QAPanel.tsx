@@ -14,7 +14,12 @@ import {
 } from 'lucide-react';
 
 interface QAPanelProps {
-  onAskQuestion: (question: string, filePath?: string) => Promise<QAResponse>;
+  onAskQuestion: (
+    question: string,
+    filePath?: string,
+    onChunk?: (chunk: string) => void,
+    onCitations?: (citations: SearchCitation[]) => void
+  ) => Promise<QAResponse>;
   currentFilePath?: string;
   onNavigateToCitation: (citation: SearchCitation) => void;
   isOpen: boolean;
@@ -64,31 +69,54 @@ export const QAPanel: React.FC<QAPanelProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const aiMsgId = `msg_${Date.now()}_a`;
+    const initialAiMsg: MessageItem = {
+      id: aiMsgId,
+      sender: 'assistant',
+      content: '',
+      citations: [],
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, userMsg, initialAiMsg]);
     setInput('');
     setIsLoading(true);
 
     try {
       const activeFile = scopedToFile ? currentFilePath : undefined;
-      const res = await onAskQuestion(textToSend, activeFile);
+      const res = await onAskQuestion(
+        textToSend,
+        activeFile,
+        (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiMsgId ? { ...m, content: m.content + chunk } : m))
+          );
+        },
+        (citations) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiMsgId ? { ...m, citations } : m))
+          );
+        }
+      );
 
-      const aiMsg: MessageItem = {
-        id: `msg_${Date.now()}_a`,
-        sender: 'assistant',
-        content: res.answer,
-        citations: res.citations,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? { ...m, content: res.answer || m.content, citations: res.citations || m.citations }
+            : m
+        )
+      );
     } catch (err: any) {
-      const errorMsg: MessageItem = {
-        id: `msg_${Date.now()}_err`,
-        sender: 'assistant',
-        content: `⚠️ Failed to generate answer: ${err.message || 'Unknown error'}. Make sure your Gemini API key is valid.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? {
+                ...m,
+                content: `⚠️ Failed to generate answer: ${err.message || 'Unknown error'}. Make sure your Gemini API key is valid.`,
+              }
+            : m
+        )
+      );
     } finally {
       setIsLoading(false);
     }

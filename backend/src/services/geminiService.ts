@@ -277,4 +277,73 @@ RULES:
       throw new Error(`Gemini Q&A Error: ${err.message || err}`);
     }
   }
+
+  /**
+   * Answers questions using real-time streaming tokens via generateContentStream
+   */
+  public async answerQuestionStream(
+    question: string,
+    citations: SearchCitation[],
+    metadata: RepositoryMetadata,
+    onChunk: (chunk: string) => void,
+    filePathFilter?: string,
+    userApiKey?: string,
+    modelName?: string
+  ): Promise<QAResponse> {
+    const { client } = this.getClient(userApiKey);
+    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+
+    const evidenceText = citations.map((c, i) => `
+[EVIDENCE #${i + 1}]
+File: ${c.filePath} (Lines ${c.startLine}-${c.endLine})
+\`\`\`
+${c.snippet}
+\`\`\`
+`).join('\n');
+
+    const prompt = `
+You are a senior codebase explainer. The user is asking a question about the repository "${metadata.fullName}".
+Answer the question based STRICTLY on the retrieved evidence below.
+
+QUESTION:
+${question}
+
+${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
+
+RETRIEVED CODE EVIDENCE:
+${evidenceText || 'No direct code matches found in retrieved files.'}
+
+RULES:
+1. Always ground your explanations in the provided evidence.
+2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
+3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
+4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+`;
+
+    try {
+      const model = client.getGenerativeModel({
+        model: chosenModel,
+        generationConfig: { temperature: 0.3 },
+      });
+
+      const result = await model.generateContentStream(prompt);
+      let fullText = '';
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        fullText += text;
+        onChunk(text);
+      }
+
+      return {
+        question,
+        answer: fullText,
+        citations,
+        modelUsed: chosenModel,
+        answeredAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      throw new Error(`Gemini Streaming Error: ${err.message || err}`);
+    }
+  }
 }
