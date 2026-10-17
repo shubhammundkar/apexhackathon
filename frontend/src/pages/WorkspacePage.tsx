@@ -14,6 +14,7 @@ import { MermaidDiagram } from '../components/MermaidDiagram';
 import { TechStackBadge } from '../components/TechStackBadge';
 import { FindingsCard } from '../components/FindingsCard';
 import { QAPanel } from '../components/QAPanel';
+import { InteractiveFileTreeStructure } from '../components/InteractiveFileTreeStructure';
 import {
   Star,
   Layers,
@@ -36,7 +37,6 @@ import {
   Code2,
   ArrowRight,
   FolderTree,
-  FolderOpen,
   Sparkles,
 } from 'lucide-react';
 
@@ -243,19 +243,6 @@ export const WorkspacePage: React.FC = () => {
     });
   }, [allFilesList, fileSearchQuery, selectedLangFilter]);
 
-  // Group files by directory for the hierarchical tree structure view
-  const groupedFilesByFolder = React.useMemo(() => {
-    const groups: Record<string, typeof filteredFilesList> = {};
-    for (const file of filteredFilesList) {
-      const parts = file.path.split('/');
-      const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Root Directory';
-      if (!groups[folder]) {
-        groups[folder] = [];
-      }
-      groups[folder].push(file);
-    }
-    return groups;
-  }, [filteredFilesList]);
 
   // Unique languages for filter chips
   const uniqueLanguages = React.useMemo(() => {
@@ -890,198 +877,143 @@ export const WorkspacePage: React.FC = () => {
               {/* Content Mode 1: Directory Catalog with 1-line Purpose */}
               {filesViewMode === 'directory' && (
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                  {/* Search, Filter & View Style Controls */}
-                  <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-3 shadow-sm">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-                      <div className="relative w-full md:max-w-md">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          placeholder="Search files by path or responsibility..."
-                          value={fileSearchQuery}
-                          onChange={(e) => setFileSearchQuery(e.target.value)}
-                          className="w-full bg-surface-subtle border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
-                        />
-                      </div>
-
-                      {/* View Style Switcher (Hierarchical Folders vs Flat Catalog) */}
-                      <div className="flex items-center space-x-2 w-full md:w-auto justify-between md:justify-end">
-                        <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
-                          <button
-                            onClick={() => setFileStructureStyle('tree')}
-                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
-                              fileStructureStyle === 'tree'
-                                ? 'bg-primary-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            <FolderTree className="w-3.5 h-3.5" />
-                            <span>Folder Tree</span>
-                          </button>
-                          <button
-                            onClick={() => setFileStructureStyle('catalog')}
-                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
-                              fileStructureStyle === 'catalog'
-                                ? 'bg-primary-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            <FileCode className="w-3.5 h-3.5" />
-                            <span>Catalog List</span>
-                          </button>
-                        </div>
-                      </div>
+                  {/* View Style Switcher Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-surface-border rounded-xl p-4 shadow-sm">
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-100 flex items-center space-x-2">
+                        <FolderTree className="w-4 h-4 text-primary-400" />
+                        <span>Project File Structure & Purpose Directory</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {allFilesList.length} total files annotated with 1-line responsibilities.
+                      </p>
                     </div>
 
-                    {/* Language Filter Chips */}
-                    <div className="pt-2 border-t border-surface-border/60 flex items-center space-x-1.5 overflow-x-auto pb-1">
-                      <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider mr-1 flex-shrink-0">
-                        Language:
-                      </span>
+                    <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
                       <button
-                        onClick={() => setSelectedLangFilter('all')}
-                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${
-                          selectedLangFilter === 'all'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
+                        onClick={() => setFileStructureStyle('tree')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
+                          fileStructureStyle === 'tree'
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        All ({allFilesList.length})
+                        <FolderTree className="w-3.5 h-3.5" />
+                        <span>Interactive Tree View</span>
                       </button>
-                      {uniqueLanguages.map((lang) => (
-                        <button
-                          key={lang}
-                          onClick={() => setSelectedLangFilter(lang)}
-                          className={`px-2 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${
-                            selectedLangFilter === lang
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
-                          }`}
-                        >
-                          {lang}
-                        </button>
-                      ))}
+                      <button
+                        onClick={() => setFileStructureStyle('catalog')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
+                          fileStructureStyle === 'catalog'
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <FileCode className="w-3.5 h-3.5" />
+                        <span>Flat Cards View</span>
+                      </button>
                     </div>
                   </div>
 
-                  {/* Empty state */}
-                  {filteredFilesList.length === 0 && (
-                    <div className="bg-surface border border-surface-border rounded-xl p-8 text-center text-xs text-slate-400">
-                      No files matching "{fileSearchQuery}".
-                    </div>
-                  )}
-
-                  {/* View Style 1: Hierarchical Grouped by Directory */}
-                  {fileStructureStyle === 'tree' && filteredFilesList.length > 0 && (
+                  {/* Render Interactive Tree View or Flat Catalog */}
+                  {fileStructureStyle === 'tree' ? (
+                    <InteractiveFileTreeStructure
+                      tree={fileTree}
+                      onSelectFile={handleSelectFile}
+                      selectedFilePath={selectedFilePath}
+                    />
+                  ) : (
                     <div className="space-y-4">
-                      {Object.entries(groupedFilesByFolder).map(([folder, files]) => (
-                        <div
-                          key={folder}
-                          className="bg-surface border border-surface-border rounded-xl overflow-hidden shadow-sm"
-                        >
-                          <div className="bg-surface-subtle/80 border-b border-surface-border px-4 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <FolderOpen className="w-4 h-4 text-primary-400" />
-                              <span className="font-mono text-xs font-bold text-slate-200">
-                                {folder}
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-slate-400 font-mono">
-                              {files.length} {files.length === 1 ? 'file' : 'files'}
-                            </span>
+                      {/* Search and Filter Controls */}
+                      <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-3 shadow-sm">
+                        <div className="relative w-full">
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Search files by path or responsibility..."
+                            value={fileSearchQuery}
+                            onChange={(e) => setFileSearchQuery(e.target.value)}
+                            className="w-full bg-surface-subtle border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
+                          />
+                        </div>
+
+                        {/* Language Filter Chips */}
+                        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1">
+                          <button
+                            onClick={() => setSelectedLangFilter('all')}
+                            className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${
+                              selectedLangFilter === 'all'
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
+                            }`}
+                          >
+                            All ({allFilesList.length})
+                          </button>
+                          {uniqueLanguages.map((lang) => (
+                            <button
+                              key={lang}
+                              onClick={() => setSelectedLangFilter(lang)}
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${
+                                selectedLangFilter === lang
+                                  ? 'bg-primary-600 text-white'
+                                  : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
+                              }`}
+                            >
+                              {lang}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Cards List */}
+                      <div className="space-y-3">
+                        {filteredFilesList.length === 0 ? (
+                          <div className="bg-surface border border-surface-border rounded-xl p-8 text-center text-xs text-slate-400">
+                            No files matching "{fileSearchQuery}".
                           </div>
-
-                          <div className="divide-y divide-surface-border/60">
-                            {files.map((file) => (
-                              <div
-                                key={file.path}
-                                className="p-3.5 hover:bg-surface-subtle/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                              >
-                                <div className="space-y-1.5 flex-1 min-w-0 mr-2">
-                                  <div className="flex items-center space-x-2 truncate">
-                                    <FileCode className="w-4 h-4 text-accent-cyan flex-shrink-0" />
-                                    <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors truncate">
-                                      {file.path.split('/').pop()}
+                        ) : (
+                          filteredFilesList.map((file) => (
+                            <div
+                              key={file.path}
+                              className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center space-x-2.5 truncate">
+                                  <FileCode className="w-4 h-4 text-primary-400 flex-shrink-0" />
+                                  <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors">
+                                    {file.path}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border">
+                                    {file.language}
+                                  </span>
+                                  {file.lineCount && (
+                                    <span className="text-[11px] text-slate-500 font-mono">
+                                      {file.lineCount} lines
                                     </span>
-                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border flex-shrink-0">
-                                      {file.language}
-                                    </span>
-                                    {file.lineCount && (
-                                      <span className="text-[10px] text-slate-500 font-mono flex-shrink-0">
-                                        {file.lineCount} lines
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* 1-Line Responsibility Summary */}
-                                  <div className="text-xs flex items-start space-x-1.5 text-slate-300 pl-6">
-                                    <span className="text-primary-400 font-semibold flex-shrink-0">
-                                      Responsibility:
-                                    </span>
-                                    <span className="text-slate-300 leading-snug">
-                                      {file.responsibility}
-                                    </span>
-                                  </div>
+                                  )}
                                 </div>
 
                                 <button
                                   onClick={() => handleSelectFile(file.path)}
-                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all flex-shrink-0 self-start sm:self-center"
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all"
                                 >
                                   <span>Inspect Code</span>
-                                  <ArrowRight className="w-3 h-3" />
+                                  <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
-                  {/* View Style 2: Flat Catalog Cards */}
-                  {fileStructureStyle === 'catalog' && filteredFilesList.length > 0 && (
-                    <div className="space-y-3">
-                      {filteredFilesList.map((file) => (
-                        <div
-                          key={file.path}
-                          className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center space-x-2.5 truncate">
-                              <FileCode className="w-4 h-4 text-primary-400 flex-shrink-0" />
-                              <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors">
-                                {file.path}
-                              </span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border">
-                                {file.language}
-                              </span>
-                              {file.lineCount && (
-                                <span className="text-[11px] text-slate-500 font-mono">
-                                  {file.lineCount} lines
-                                </span>
-                              )}
+                              {/* 1-Line Responsibility Banner */}
+                              <div className="flex items-start space-x-2 text-xs bg-surface-subtle/80 border border-surface-border/80 px-3 py-2 rounded-lg">
+                                <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                                <div className="leading-snug">
+                                  <span className="font-semibold text-slate-200 mr-1.5">Responsibility:</span>
+                                  <span className="text-slate-300">{file.responsibility}</span>
+                                </div>
+                              </div>
                             </div>
-
-                            <button
-                              onClick={() => handleSelectFile(file.path)}
-                              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all"
-                            >
-                              <span>Inspect Code</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* 1-Line Responsibility Banner */}
-                          <div className="flex items-start space-x-2 text-xs bg-surface-subtle/80 border border-surface-border/80 px-3 py-2 rounded-lg">
-                            <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
-                            <div className="leading-snug">
-                              <span className="font-semibold text-slate-200 mr-1.5">Responsibility:</span>
-                              <span className="text-slate-300">{file.responsibility}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
