@@ -23,7 +23,7 @@ export class GeminiService {
   private defaultApiKey: string;
   private defaultModel: string;
 
-  constructor(apiKey: string = '', model: string = 'gemini-2.5-flash') {
+  constructor(apiKey: string = '', model: string = 'gemini-3.8-flash') {
     this.defaultApiKey = apiKey.trim();
     this.defaultModel = model.trim();
   }
@@ -35,7 +35,7 @@ export class GeminiService {
     }
     return {
       client: new GoogleGenerativeAI(key),
-      modelName: this.defaultModel || 'gemini-2.5-flash',
+      modelName: this.defaultModel || 'gemini-3.8-flash',
     };
   }
 
@@ -176,11 +176,11 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
         modelUsed: chosenModel,
       };
     } catch (err: any) {
-      if (err.status === 404 || err.message?.includes('not found')) {
-        // Fallback to gemini-1.5-flash if gemini-2.5-flash isn't available
+      if (err.status === 404 || err.message?.includes('not found') || err.message?.includes('no longer available')) {
         try {
+          const fallbackModelName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
           const fallbackModel = client.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: fallbackModelName,
             generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
           });
           const response = await fallbackModel.generateContent(prompt);
@@ -194,7 +194,7 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
             architecture: parsed.architecture,
             executionFlows: parsed.executionFlows || [],
             findings: parsed.findings || [],
-            modelUsed: 'gemini-1.5-flash',
+            modelUsed: fallbackModelName,
           };
         } catch (innerErr: any) {
           throw new Error(`Gemini API Error: ${innerErr.message || innerErr}`);
@@ -216,7 +216,7 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
     modelName?: string
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
-    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+    const chosenModel = modelName || this.defaultModel || 'gemini-3.8-flash';
 
     const evidenceText = citations.map((c, i) => `
 [EVIDENCE #${i + 1}]
@@ -263,14 +263,15 @@ RULES:
         answeredAt: new Date().toISOString(),
       };
     } catch (err: any) {
-      if (err.message?.includes('not found') || err.status === 404) {
-        const fallback = client.getGenerativeModel({ model: 'gemini-1.5-flash', generationConfig: { temperature: 0.3 } });
+      if (err.message?.includes('not found') || err.message?.includes('no longer available') || err.status === 404) {
+        const fallbackName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
+        const fallback = client.getGenerativeModel({ model: fallbackName, generationConfig: { temperature: 0.3 } });
         const res = await fallback.generateContent(prompt);
         return {
           question,
           answer: res.response.text(),
           citations,
-          modelUsed: 'gemini-1.5-flash',
+          modelUsed: fallbackName,
           answeredAt: new Date().toISOString(),
         };
       }
@@ -291,7 +292,7 @@ RULES:
     modelName?: string
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
-    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+    const chosenModel = modelName || this.defaultModel || 'gemini-3.8-flash';
 
     const evidenceText = citations.map((c, i) => `
 [EVIDENCE #${i + 1}]
@@ -343,6 +344,28 @@ RULES:
         answeredAt: new Date().toISOString(),
       };
     } catch (err: any) {
+      if (err.message?.includes('not found') || err.message?.includes('no longer available') || err.status === 404) {
+        const fallbackName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
+        try {
+          const fallback = client.getGenerativeModel({ model: fallbackName, generationConfig: { temperature: 0.3 } });
+          const result = await fallback.generateContentStream(prompt);
+          let fullText = '';
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            fullText += text;
+            onChunk(text);
+          }
+          return {
+            question,
+            answer: fullText,
+            citations,
+            modelUsed: fallbackName,
+            answeredAt: new Date().toISOString(),
+          };
+        } catch (innerErr: any) {
+          throw new Error(`Gemini Streaming Error: ${innerErr.message || innerErr}`);
+        }
+      }
       throw new Error(`Gemini Streaming Error: ${err.message || err}`);
     }
   }

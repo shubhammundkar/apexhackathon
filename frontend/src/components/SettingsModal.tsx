@@ -13,12 +13,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   serverGeminiConfigured,
 }) => {
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.8-flash');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_custom_api_key') || '';
-    const savedModel = localStorage.getItem('gemini_selected_model') || 'gemini-2.5-flash';
+    let savedModel = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+    if (savedModel === 'gemini-2.5-flash') {
+      savedModel = 'gemini-3.8-flash';
+      localStorage.setItem('gemini_selected_model', 'gemini-3.8-flash');
+    }
     setApiKey(savedKey);
     setSelectedModel(savedModel);
   }, [isOpen]);
@@ -107,7 +111,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onChange={(e) => setSelectedModel(e.target.value)}
               className="w-full bg-surface-subtle border border-surface-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-primary-500 transition-colors"
             >
-              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fastest & High Quality)</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommended - Fastest & High Quality)</option>
               <option value="gemini-1.5-flash">Gemini 1.5 Flash (High speed)</option>
               <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep architectural reasoning)</option>
             </select>
