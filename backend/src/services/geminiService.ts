@@ -1,0 +1,280 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  RepositoryMetadata,
+  RepositoryOverview,
+  ArchitectureAnalysis,
+  ExecutionFlow,
+  CodeFinding,
+  SearchCitation,
+  QAResponse,
+  SourceFile,
+} from '@codebase-explainer/shared';
+import { ParsedProjectManifest } from './parserService.js';
+
+export interface AnalysisGenerationResult {
+  overview: RepositoryOverview;
+  architecture: ArchitectureAnalysis;
+  executionFlows: ExecutionFlow[];
+  findings: CodeFinding[];
+  modelUsed: string;
+}
+
+export class GeminiService {
+  private defaultApiKey: string;
+  private defaultModel: string;
+
+  constructor(apiKey: string = '', model: string = 'gemini-2.5-flash') {
+    this.defaultApiKey = apiKey.trim();
+    this.defaultModel = model.trim();
+  }
+
+  private getClient(overrideKey?: string): { client: GoogleGenerativeAI; modelName: string } {
+    const key = (overrideKey && overrideKey.trim().length > 5) ? overrideKey.trim() : this.defaultApiKey;
+    if (!key) {
+      throw new Error('GEMINI_API_KEY is not configured. Please provide an API key in your server .env or in the request.');
+    }
+    return {
+      client: new GoogleGenerativeAI(key),
+      modelName: this.defaultModel || 'gemini-2.5-flash',
+    };
+  }
+
+  public isConfigured(overrideKey?: string): boolean {
+    const key = (overrideKey && overrideKey.trim().length > 5) ? overrideKey.trim() : this.defaultApiKey;
+    return Boolean(key && key.length > 5);
+  }
+
+  /**
+   * Generates a grounded full repository analysis using Gemini
+   */
+  public async generateRepositoryAnalysis(
+    metadata: RepositoryMetadata,
+    manifest: ParsedProjectManifest,
+    files: SourceFile[],
+    userApiKey?: string,
+    modelName?: string
+  ): Promise<AnalysisGenerationResult> {
+    const { client } = this.getClient(userApiKey);
+    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+
+    // Prepare code context sample (top files like package.json, entrypoints, README)
+    const contextFiles = files.slice(0, 15).map((f) => {
+      const truncatedContent = f.content.length > 4000 ? f.content.slice(0, 4000) + '\n... [truncated]' : f.content;
+      return `--- FILE: ${f.path} (${f.language}) ---\n${truncatedContent}\n`;
+    }).join('\n');
+
+    const prompt = `
+You are an expert software architect and security auditor.
+Analyze the following real repository and generate a strictly grounded, accurate technical breakdown.
+DO NOT hallucinate files, functions, or dependencies that are not in the provided evidence.
+
+REPOSITORY METADATA:
+- Name: ${metadata.fullName}
+- Description: ${metadata.description || 'N/A'}
+- Primary Language: ${metadata.primaryLanguage || 'Unknown'}
+- Stars: ${metadata.stars}
+- Detected Entry Points: ${JSON.stringify(manifest.entryPoints)}
+- Detected Tech Stack: ${JSON.stringify(manifest.stack)}
+- Package Manager: ${manifest.packageManager || 'None'}
+- Scripts: ${JSON.stringify(manifest.scripts)}
+
+SOURCE CODE EXTRACTS:
+${contextFiles}
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "overview": {
+    "projectName": "${metadata.name}",
+    "tagline": "One-line summary of what this repository does",
+    "problemSolved": "Detailed description of the specific problem this project solves",
+    "detailedSummary": "Comprehensive multi-paragraph technical summary of the codebase",
+    "quickStartGuide": {
+      "prerequisites": ["List of tools, runtimes, e.g. Node 18+, Python 3.10+"],
+      "installCommands": ["Commands to install dependencies based on detected package manager/scripts"],
+      "runCommands": ["Commands to build and run the project"],
+      "envVariablesRequired": ["Environment variables inferred from code or config files"]
+    },
+    "missingOrAmbiguousInfo": ["Any missing documentation, secrets, or ambiguous setup steps"]
+  },
+  "architecture": {
+    "pattern": "Architecture style (e.g. Monolithic REST API, SPA + Backend, CLI Tool, Event-driven)",
+    "description": "Explanation of component relationships, architectural layers, and boundary separation",
+    "layers": [
+      {
+        "name": "Layer Name",
+        "type": "frontend" | "backend" | "database" | "api" | "auth" | "worker" | "shared",
+        "description": "Responsibility of this layer",
+        "files": ["file1.ts", "file2.ts"],
+        "dependencies": ["other layer names"]
+      }
+    ],
+    "mermaidDiagram": "graph TD\\n  A[Frontend] --> B[API]\\n  B --> C[Database]\\n",
+    "dataFlowDescription": "Detailed trace of how data flows between layers"
+  },
+  "executionFlows": [
+    {
+      "name": "Main Execution Flow",
+      "trigger": "Application start / HTTP Request",
+      "description": "Step-by-step description of entrypoint initialization",
+      "steps": [
+        {
+          "step": 1,
+          "layer": "backend",
+          "file": "path/to/entry.ts",
+          "functionOrRoute": "main()",
+          "action": "Description of action",
+          "isConfirmed": true,
+          "notes": "Verified from file"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "finding-1",
+      "category": "bug" | "security" | "code_smell" | "architecture" | "missing_test" | "maintainability",
+      "severity": "critical" | "high" | "medium" | "low" | "info",
+      "title": "Clear concise title",
+      "description": "Detailed explanation of the issue backed by actual code",
+      "filePath": "path/to/file.ts",
+      "startLine": 1,
+      "endLine": 10,
+      "codeSnippet": "code extract",
+      "isConfirmed": true,
+      "impact": "Potential security or operational impact",
+      "remediation": "Exact suggested fix"
+    }
+  ]
+}
+
+Ensure the mermaidDiagram is valid Mermaid syntax (avoid unescaped special characters in node labels).
+DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
+`;
+
+    try {
+      const model = client.getGenerativeModel({
+        model: chosenModel,
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const response = await model.generateContent(prompt);
+      const text = response.response.text();
+      const parsed = JSON.parse(text);
+
+      return {
+        overview: {
+          ...parsed.overview,
+          detectedStack: manifest.stack,
+          entryPoints: manifest.entryPoints,
+        },
+        architecture: parsed.architecture,
+        executionFlows: parsed.executionFlows || [],
+        findings: parsed.findings || [],
+        modelUsed: chosenModel,
+      };
+    } catch (err: any) {
+      if (err.status === 404 || err.message?.includes('not found')) {
+        // Fallback to gemini-1.5-flash if gemini-2.5-flash isn't available
+        try {
+          const fallbackModel = client.getGenerativeModel({
+            model: 'gemini-1.5-flash',
+            generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+          });
+          const response = await fallbackModel.generateContent(prompt);
+          const parsed = JSON.parse(response.response.text());
+          return {
+            overview: {
+              ...parsed.overview,
+              detectedStack: manifest.stack,
+              entryPoints: manifest.entryPoints,
+            },
+            architecture: parsed.architecture,
+            executionFlows: parsed.executionFlows || [],
+            findings: parsed.findings || [],
+            modelUsed: 'gemini-1.5-flash',
+          };
+        } catch (innerErr: any) {
+          throw new Error(`Gemini API Error: ${innerErr.message || innerErr}`);
+        }
+      }
+      throw new Error(`Gemini API Error: ${err.message || err}`);
+    }
+  }
+
+  /**
+   * Answers natural language questions grounded strictly in retrieved source citations
+   */
+  public async answerQuestion(
+    question: string,
+    citations: SearchCitation[],
+    metadata: RepositoryMetadata,
+    filePathFilter?: string,
+    userApiKey?: string,
+    modelName?: string
+  ): Promise<QAResponse> {
+    const { client } = this.getClient(userApiKey);
+    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+
+    const evidenceText = citations.map((c, i) => `
+[EVIDENCE #${i + 1}]
+File: ${c.filePath} (Lines ${c.startLine}-${c.endLine})
+\`\`\`
+${c.snippet}
+\`\`\`
+`).join('\n');
+
+    const prompt = `
+You are a senior codebase explainer. The user is asking a question about the repository "${metadata.fullName}".
+Answer the question based STRICTLY on the retrieved evidence below.
+
+QUESTION:
+${question}
+
+${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
+
+RETRIEVED CODE EVIDENCE:
+${evidenceText || 'No direct code matches found in retrieved files.'}
+
+RULES:
+1. Always ground your explanations in the provided evidence.
+2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
+3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
+4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+`;
+
+    try {
+      const model = client.getGenerativeModel({
+        model: chosenModel,
+        generationConfig: { temperature: 0.3 },
+      });
+
+      const response = await model.generateContent(prompt);
+      const answer = response.response.text();
+
+      return {
+        question,
+        answer,
+        citations,
+        modelUsed: chosenModel,
+        answeredAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      if (err.message?.includes('not found') || err.status === 404) {
+        const fallback = client.getGenerativeModel({ model: 'gemini-1.5-flash', generationConfig: { temperature: 0.3 } });
+        const res = await fallback.generateContent(prompt);
+        return {
+          question,
+          answer: res.response.text(),
+          citations,
+          modelUsed: 'gemini-1.5-flash',
+          answeredAt: new Date().toISOString(),
+        };
+      }
+      throw new Error(`Gemini Q&A Error: ${err.message || err}`);
+    }
+  }
+}

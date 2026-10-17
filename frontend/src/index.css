@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #0a0d14;
+  color: #f1f5f9;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f131d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262f45;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b4766;
+}
+
+/* Code viewer line numbers */
+.line-numbers {
+  user-select: none;
+}
+
+/* Mermaid diagram SVG styling */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
