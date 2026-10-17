@@ -30,19 +30,35 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     ...(options.headers || {}),
   };
 
-  const response = await fetch(url, { ...options, headers });
-  const data = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(url, { ...options, headers });
+    const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
+    if (!response.ok) {
+      if (response.status === 500 && !data.message) {
+        throw new ApiError(
+          'Backend server is not reachable on port 3001. Please run "npm run dev:backend" or "npm run dev".',
+          500,
+          'BACKEND_OFFLINE'
+        );
+      }
+      throw new ApiError(
+        data.message || `HTTP ${response.status}: An unexpected error occurred`,
+        response.status,
+        data.error,
+        data.details
+      );
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
     throw new ApiError(
-      data.message || `HTTP ${response.status}: An unexpected error occurred`,
-      response.status,
-      data.error,
-      data.details
+      'Cannot connect to backend server. Make sure the backend is running on port 3001 (run "npm run dev:backend" or "npm run dev").',
+      503,
+      'NETWORK_ERROR'
     );
   }
-
-  return data as T;
 }
 
 export const apiClient = {
