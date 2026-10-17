@@ -124,10 +124,48 @@ apiRouter.get('/repositories/:owner/:repo/files', (req: Request, res: Response) 
     });
   }
 
+  // Ensure fileTree nodes have responsibilities populated
+  const attachResponsibility = (nodes: any[]) => {
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        if (!node.responsibility) {
+          const fileAnalysis = repo.fileAnalysisMap.get(node.path);
+          node.responsibility =
+            fileAnalysis?.responsibility ||
+            repo.analysis?.importantFiles?.find(
+              (i) => i.path.toLowerCase() === node.path.toLowerCase()
+            )?.responsibility ||
+            `Source module implementing ${node.name}`;
+        }
+      } else if (node.children) {
+        attachResponsibility(node.children);
+      }
+    }
+  };
+  attachResponsibility(repo.fileTree);
+
+  const allFiles = repo.files.map((f) => {
+    const analysis =
+      repo.fileAnalysisMap.get(f.path) ||
+      repo.analysis?.importantFiles?.find(
+        (i) => i.path.toLowerCase() === f.path.toLowerCase()
+      );
+    return {
+      path: f.path,
+      name: f.path.split('/').pop() || f.path,
+      language: f.language,
+      size: f.size,
+      lineCount: f.lineCount,
+      responsibility:
+        analysis?.responsibility || `Implements logic for ${f.path.split('/').pop()}`,
+    };
+  });
+
   res.json({
     repositoryId: repoId,
     tree: repo.fileTree,
     totalFiles: repo.files.length,
+    files: allFiles,
   });
 });
 

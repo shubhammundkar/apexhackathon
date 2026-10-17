@@ -21,9 +21,16 @@ interface TreeNodeProps {
   selectedPath?: string;
   onSelectFile: (path: string) => void;
   level: number;
+  showResponsibilities?: boolean;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, selectedPath, onSelectFile, level }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({
+  node,
+  selectedPath,
+  onSelectFile,
+  level,
+  showResponsibilities,
+}) => {
   const [isOpen, setIsOpen] = useState(level < 1); // Expand top level by default
 
   const isSelected = selectedPath === node.path;
@@ -83,6 +90,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, selectedPath, onSelectFile, l
         )}
       </div>
 
+      {!isDir && showResponsibilities && node.responsibility && (
+        <div
+          style={{ paddingLeft: `${level * 14 + 28}px` }}
+          className="text-[10px] text-slate-400 truncate pr-2 leading-tight pb-1 -mt-0.5"
+        >
+          ↳ {node.responsibility}
+        </div>
+      )}
+
       {isDir && isOpen && node.children && (
         <div className="space-y-0.5">
           {node.children.map((child) => (
@@ -92,6 +108,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, selectedPath, onSelectFile, l
               selectedPath={selectedPath}
               onSelectFile={onSelectFile}
               level={level + 1}
+              showResponsibilities={showResponsibilities}
             />
           ))}
         </div>
@@ -102,6 +119,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, selectedPath, onSelectFile, l
 
 export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelectFile }) => {
   const [search, setSearch] = useState('');
+  const [showResponsibilities, setShowResponsibilities] = useState(true);
 
   // Flatten tree for search if query exists
   const filterNodes = (nodes: RepositoryFileNode[], query: string): RepositoryFileNode[] => {
@@ -110,7 +128,10 @@ export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelect
     const filtered: RepositoryFileNode[] = [];
     for (const node of nodes) {
       if (node.type === 'file') {
-        if (node.path.toLowerCase().includes(query.toLowerCase())) {
+        if (
+          node.path.toLowerCase().includes(query.toLowerCase()) ||
+          (node.responsibility && node.responsibility.toLowerCase().includes(query.toLowerCase()))
+        ) {
           filtered.push(node);
         }
       } else if (node.children) {
@@ -128,7 +149,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelect
   return (
     <div className="flex flex-col h-full bg-surface-subtle/50 border-r border-surface-border">
       {/* Search Header */}
-      <div className="p-3 border-b border-surface-border">
+      <div className="p-3 border-b border-surface-border space-y-2">
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
@@ -138,6 +159,21 @@ export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelect
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-surface border border-surface-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
           />
+        </div>
+
+        <div className="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+          <span>Files Tree</span>
+          <button
+            onClick={() => setShowResponsibilities(!showResponsibilities)}
+            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+              showResponsibilities
+                ? 'bg-primary-600/30 text-primary-300 border border-primary-500/40'
+                : 'bg-surface hover:text-white text-slate-400 border border-surface-border'
+            }`}
+            title="Toggle 1-line responsibility notes under filenames"
+          >
+            {showResponsibilities ? '✓ 1-Liners ON' : '+ 1-Liners'}
+          </button>
         </div>
       </div>
 
@@ -155,6 +191,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelect
               selectedPath={selectedPath}
               onSelectFile={onSelectFile}
               level={0}
+              showResponsibilities={showResponsibilities}
             />
           ))
         )}

@@ -83,9 +83,12 @@ export const apiClient = {
     ),
 
   getFileTree: (owner: string, repo: string) =>
-    request<{ repositoryId: string; tree: RepositoryFileNode[]; totalFiles: number }>(
-      `/repositories/${owner}/${repo}/files`
-    ),
+    request<{
+      repositoryId: string;
+      tree: RepositoryFileNode[];
+      totalFiles: number;
+      files?: { path: string; name: string; language: string; size: number; lineCount: number; responsibility: string }[];
+    }>(`/repositories/${owner}/${repo}/files`),
 
   getFileContent: (owner: string, repo: string, filePath: string) =>
     request<SourceFile & { analysis?: FileAnalysis }>(

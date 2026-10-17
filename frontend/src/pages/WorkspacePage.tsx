@@ -36,6 +36,7 @@ import {
   Code2,
   ArrowRight,
   FolderTree,
+  FolderOpen,
   Sparkles,
 } from 'lucide-react';
 
@@ -57,8 +58,17 @@ export const WorkspacePage: React.FC = () => {
 
   // Files tab dual mode (Directory Catalog vs Code Inspector)
   const [filesViewMode, setFilesViewMode] = useState<'directory' | 'inspector'>('directory');
+  const [fileStructureStyle, setFileStructureStyle] = useState<'tree' | 'catalog'>('tree');
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const [selectedLangFilter, setSelectedLangFilter] = useState('all');
+  const [repositoryFiles, setRepositoryFiles] = useState<{
+    path: string;
+    name: string;
+    language: string;
+    size?: number;
+    lineCount?: number;
+    responsibility: string;
+  }[]>([]);
 
   // Architecture 3-Way Mode (Beginner, Low-Level Technical, Full Technical Blueprint)
   const [archExplanationTier, setArchExplanationTier] = useState<'beginner' | 'lowlevel' | 'deep'>('beginner');
@@ -77,8 +87,11 @@ export const WorkspacePage: React.FC = () => {
 
         setAnalysis(analysisData);
         setFileTree(treeData.tree);
+        if (treeData.files && treeData.files.length > 0) {
+          setRepositoryFiles(treeData.files);
+        }
 
-        // Auto-select entrypoint or first file
+        // Auto-select entrypoint or first file for inspection buffer
         if (analysisData.overview.entryPoints.length > 0) {
           const entry = analysisData.overview.entryPoints[0].path;
           setSelectedFilePath(entry);
@@ -170,35 +183,52 @@ export const WorkspacePage: React.FC = () => {
     setActiveTab('files');
   };
 
-  // Extract all files with 1-line responsibility
+  // Extract ALL files across the repository with 1-line responsibility
   const allFilesList = React.useMemo(() => {
-    if (!analysis) return [];
-    if (analysis.importantFiles && analysis.importantFiles.length > 0) {
-      return analysis.importantFiles.map((f) => ({
-        path: f.path,
-        language: f.language || 'text',
-        lineCount: f.lineCount,
-        responsibility: f.responsibility || `Implements logic for ${f.path.split('/').pop()}`,
-      }));
+    if (repositoryFiles.length > 0) {
+      return repositoryFiles;
     }
-    const extracted: { path: string; language: string; lineCount?: number; responsibility: string }[] = [];
+
+    const impMap = new Map<string, string>();
+    if (analysis?.importantFiles) {
+      analysis.importantFiles.forEach((f) =>
+        impMap.set(f.path.toLowerCase(), f.responsibility)
+      );
+    }
+
+    const extracted: {
+      path: string;
+      name: string;
+      language: string;
+      lineCount?: number;
+      size?: number;
+      responsibility: string;
+    }[] = [];
+
     const traverse = (nodes: RepositoryFileNode[]) => {
       for (const n of nodes) {
         if (n.type === 'file') {
+          const resp =
+            n.responsibility ||
+            impMap.get(n.path.toLowerCase()) ||
+            `Source module implementing ${n.name}`;
           extracted.push({
             path: n.path,
+            name: n.name,
             language: n.language || 'text',
             lineCount: n.lineCount,
-            responsibility: n.responsibility || `Source code file: ${n.name}`,
+            size: n.size,
+            responsibility: resp,
           });
         } else if (n.children) {
           traverse(n.children);
         }
       }
     };
+
     traverse(fileTree);
     return extracted;
-  }, [analysis, fileTree]);
+  }, [repositoryFiles, analysis, fileTree]);
 
   // Filtered files list for directory search
   const filteredFilesList = React.useMemo(() => {
@@ -212,6 +242,20 @@ export const WorkspacePage: React.FC = () => {
       return matchesSearch && matchesLang;
     });
   }, [allFilesList, fileSearchQuery, selectedLangFilter]);
+
+  // Group files by directory for the hierarchical tree structure view
+  const groupedFilesByFolder = React.useMemo(() => {
+    const groups: Record<string, typeof filteredFilesList> = {};
+    for (const file of filteredFilesList) {
+      const parts = file.path.split('/');
+      const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Root Directory';
+      if (!groups[folder]) {
+        groups[folder] = [];
+      }
+      groups[folder].push(file);
+    }
+    return groups;
+  }, [filteredFilesList]);
 
   // Unique languages for filter chips
   const uniqueLanguages = React.useMemo(() => {
@@ -352,7 +396,10 @@ export const WorkspacePage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('files')}
+              onClick={() => {
+                setActiveTab('files');
+                setFilesViewMode('directory');
+              }}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
                 activeTab === 'files'
                   ? 'bg-primary-600 text-white shadow-sm'
@@ -843,10 +890,10 @@ export const WorkspacePage: React.FC = () => {
               {/* Content Mode 1: Directory Catalog with 1-line Purpose */}
               {filesViewMode === 'directory' && (
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                  {/* Search and Filter Controls */}
-                  <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-3">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <div className="relative w-full sm:max-w-md">
+                  {/* Search, Filter & View Style Controls */}
+                  <div className="bg-surface border border-surface-border rounded-xl p-4 space-y-3 shadow-sm">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                      <div className="relative w-full md:max-w-md">
                         <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
@@ -857,43 +904,145 @@ export const WorkspacePage: React.FC = () => {
                         />
                       </div>
 
-                      {/* Language Filter Chips */}
-                      <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-                        <button
-                          onClick={() => setSelectedLangFilter('all')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                            selectedLangFilter === 'all'
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-surface-subtle text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          All ({allFilesList.length})
-                        </button>
-                        {uniqueLanguages.map((lang) => (
+                      {/* View Style Switcher (Hierarchical Folders vs Flat Catalog) */}
+                      <div className="flex items-center space-x-2 w-full md:w-auto justify-between md:justify-end">
+                        <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
                           <button
-                            key={lang}
-                            onClick={() => setSelectedLangFilter(lang)}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${
-                              selectedLangFilter === lang
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-surface-subtle text-slate-400 hover:text-white'
+                            onClick={() => setFileStructureStyle('tree')}
+                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
+                              fileStructureStyle === 'tree'
+                                ? 'bg-primary-600 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-slate-200'
                             }`}
                           >
-                            {lang}
+                            <FolderTree className="w-3.5 h-3.5" />
+                            <span>Folder Tree</span>
                           </button>
-                        ))}
+                          <button
+                            onClick={() => setFileStructureStyle('catalog')}
+                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
+                              fileStructureStyle === 'catalog'
+                                ? 'bg-primary-600 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <FileCode className="w-3.5 h-3.5" />
+                            <span>Catalog List</span>
+                          </button>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Language Filter Chips */}
+                    <div className="pt-2 border-t border-surface-border/60 flex items-center space-x-1.5 overflow-x-auto pb-1">
+                      <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider mr-1 flex-shrink-0">
+                        Language:
+                      </span>
+                      <button
+                        onClick={() => setSelectedLangFilter('all')}
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${
+                          selectedLangFilter === 'all'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
+                        }`}
+                      >
+                        All ({allFilesList.length})
+                      </button>
+                      {uniqueLanguages.map((lang) => (
+                        <button
+                          key={lang}
+                          onClick={() => setSelectedLangFilter(lang)}
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${
+                            selectedLangFilter === lang
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* File Structure Catalog List */}
-                  <div className="space-y-3">
-                    {filteredFilesList.length === 0 ? (
-                      <div className="bg-surface border border-surface-border rounded-xl p-8 text-center text-xs text-slate-400">
-                        No files matching "{fileSearchQuery}".
-                      </div>
-                    ) : (
-                      filteredFilesList.map((file) => (
+                  {/* Empty state */}
+                  {filteredFilesList.length === 0 && (
+                    <div className="bg-surface border border-surface-border rounded-xl p-8 text-center text-xs text-slate-400">
+                      No files matching "{fileSearchQuery}".
+                    </div>
+                  )}
+
+                  {/* View Style 1: Hierarchical Grouped by Directory */}
+                  {fileStructureStyle === 'tree' && filteredFilesList.length > 0 && (
+                    <div className="space-y-4">
+                      {Object.entries(groupedFilesByFolder).map(([folder, files]) => (
+                        <div
+                          key={folder}
+                          className="bg-surface border border-surface-border rounded-xl overflow-hidden shadow-sm"
+                        >
+                          <div className="bg-surface-subtle/80 border-b border-surface-border px-4 py-2.5 flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <FolderOpen className="w-4 h-4 text-primary-400" />
+                              <span className="font-mono text-xs font-bold text-slate-200">
+                                {folder}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              {files.length} {files.length === 1 ? 'file' : 'files'}
+                            </span>
+                          </div>
+
+                          <div className="divide-y divide-surface-border/60">
+                            {files.map((file) => (
+                              <div
+                                key={file.path}
+                                className="p-3.5 hover:bg-surface-subtle/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                              >
+                                <div className="space-y-1.5 flex-1 min-w-0 mr-2">
+                                  <div className="flex items-center space-x-2 truncate">
+                                    <FileCode className="w-4 h-4 text-accent-cyan flex-shrink-0" />
+                                    <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors truncate">
+                                      {file.path.split('/').pop()}
+                                    </span>
+                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border flex-shrink-0">
+                                      {file.language}
+                                    </span>
+                                    {file.lineCount && (
+                                      <span className="text-[10px] text-slate-500 font-mono flex-shrink-0">
+                                        {file.lineCount} lines
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* 1-Line Responsibility Summary */}
+                                  <div className="text-xs flex items-start space-x-1.5 text-slate-300 pl-6">
+                                    <span className="text-primary-400 font-semibold flex-shrink-0">
+                                      Responsibility:
+                                    </span>
+                                    <span className="text-slate-300 leading-snug">
+                                      {file.responsibility}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => handleSelectFile(file.path)}
+                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all flex-shrink-0 self-start sm:self-center"
+                                >
+                                  <span>Inspect Code</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* View Style 2: Flat Catalog Cards */}
+                  {fileStructureStyle === 'catalog' && filteredFilesList.length > 0 && (
+                    <div className="space-y-3">
+                      {filteredFilesList.map((file) => (
                         <div
                           key={file.path}
                           className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group"
@@ -923,7 +1072,7 @@ export const WorkspacePage: React.FC = () => {
                             </button>
                           </div>
 
-                          {/* 1-Line Responsibility Banner (Matching Screenshot exactly) */}
+                          {/* 1-Line Responsibility Banner */}
                           <div className="flex items-start space-x-2 text-xs bg-surface-subtle/80 border border-surface-border/80 px-3 py-2 rounded-lg">
                             <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
                             <div className="leading-snug">
@@ -932,9 +1081,9 @@ export const WorkspacePage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
