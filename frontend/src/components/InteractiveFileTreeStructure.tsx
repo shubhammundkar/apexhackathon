@@ -61,16 +61,16 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         >
           <div className="flex items-center space-x-2 truncate">
             {isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-primary-400 flex-shrink-0 transition-colors" />
+              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 transition-colors" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary-400 flex-shrink-0 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 transition-colors" />
             )}
             {isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-primary-400 flex-shrink-0" />
+              <FolderOpen className="w-4 h-4 text-primary-500 dark:text-primary-400 flex-shrink-0" />
             ) : (
-              <Folder className="w-4 h-4 text-primary-400/80 flex-shrink-0" />
+              <Folder className="w-4 h-4 text-primary-500/80 dark:text-primary-400/80 flex-shrink-0" />
             )}
-            <span className="font-mono text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
+            <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-white transition-colors">
               {node.name}/
             </span>
           </div>
@@ -106,11 +106,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   return (
     <div
       style={{ paddingLeft: `${level * 20 + 8}px` }}
-      className={`p-3 rounded-lg border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-2.5 ${
-        isSelected
-          ? 'bg-primary-950/30 border-primary-500/50 shadow-sm'
+      className={`p-3 rounded-lg border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-2.5 ${isSelected
+          ? 'bg-primary-500/10 dark:bg-primary-950/30 border-primary-500/50 shadow-sm'
           : 'bg-surface/70 hover:bg-surface border-surface-border/80 hover:border-primary-500/40'
-      }`}
+        }`}
     >
       <div className="space-y-1.5 flex-1 min-w-0 mr-2">
         {/* File name & badges */}
@@ -118,32 +117,32 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           {isDoc ? (
             <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
           ) : (
-            <FileCode className="w-4 h-4 text-accent-cyan flex-shrink-0" />
+            <FileCode className="w-4 h-4 text-primary-500 dark:text-accent-cyan flex-shrink-0" />
           )}
           <span
             onClick={() => onSelectFile(node.path)}
-            className="font-mono text-xs font-semibold text-slate-100 hover:text-primary-300 cursor-pointer transition-colors truncate"
+            className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-300 cursor-pointer transition-colors truncate"
           >
             {node.name}
           </span>
           {node.language && (
-            <span className="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border flex-shrink-0">
+            <span className="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-500 dark:text-slate-400 border border-surface-border flex-shrink-0">
               {node.language}
             </span>
           )}
           {node.lineCount && (
-            <span className="text-[10px] text-slate-500 font-mono flex-shrink-0">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono flex-shrink-0">
               {node.lineCount} lines
             </span>
           )}
         </div>
 
         {/* 1-Line "What does it do" description */}
-        <div className="text-xs text-slate-300 flex items-start space-x-1.5 pl-6 bg-surface-subtle/60 border border-surface-border/60 py-1 px-2.5 rounded-md">
-          <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-slate-700 dark:text-slate-300 flex items-start space-x-1.5 pl-6 bg-surface-subtle/60 border border-surface-border/60 py-1 px-2.5 rounded-md">
+          <Layers className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400 flex-shrink-0 mt-0.5" />
           <div className="leading-snug">
-            <span className="text-primary-400 font-semibold mr-1.5">Responsibility:</span>
-            <span className="text-slate-300">
+            <span className="text-primary-600 dark:text-primary-400 font-semibold mr-1.5">Responsibility:</span>
+            <span className="text-slate-700 dark:text-slate-300">
               {node.responsibility || `Source module implementing logic for ${node.name}`}
             </span>
           </div>
@@ -153,7 +152,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       {/* Inspect Code Button */}
       <button
         onClick={() => onSelectFile(node.path)}
-        className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all flex-shrink-0 self-start md:self-center"
+        className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-600/15 hover:bg-primary-600 text-primary-700 dark:text-primary-300 hover:text-white border border-primary-500/30 transition-all flex-shrink-0 self-start md:self-center"
       >
         <span>Inspect Code</span>
         <ArrowRight className="w-3 h-3" />
@@ -281,10 +280,10 @@ export const InteractiveFileTreeStructure: React.FC<InteractiveFileTreeStructure
       <div className="p-4 border-b border-surface-border space-y-3 bg-surface-subtle/50">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-sm text-slate-100">
+            <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
               Interactive Repository File Tree
             </span>
-            <span className="text-xs text-primary-400 font-mono bg-primary-950/40 border border-primary-500/30 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-primary-700 dark:text-primary-400 font-mono bg-primary-500/10 dark:bg-primary-950/40 border border-primary-500/30 px-2 py-0.5 rounded-full font-medium">
               {totalFilesCount} total files
             </span>
           </div>
@@ -293,14 +292,14 @@ export const InteractiveFileTreeStructure: React.FC<InteractiveFileTreeStructure
           <div className="flex items-center space-x-2">
             <button
               onClick={expandAll}
-              className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white bg-surface hover:bg-surface-muted border border-surface-border transition-colors flex items-center space-x-1"
+              className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-surface hover:bg-surface-muted border border-surface-border transition-colors flex items-center space-x-1"
             >
               <ChevronsUpDown className="w-3.5 h-3.5" />
               <span>Expand All</span>
             </button>
             <button
               onClick={collapseAll}
-              className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white bg-surface hover:bg-surface-muted border border-surface-border transition-colors flex items-center space-x-1"
+              className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-surface hover:bg-surface-muted border border-surface-border transition-colors flex items-center space-x-1"
             >
               <ChevronsDownUp className="w-3.5 h-3.5" />
               <span>Collapse All</span>
@@ -317,7 +316,7 @@ export const InteractiveFileTreeStructure: React.FC<InteractiveFileTreeStructure
               placeholder="Filter tree by filename, extension, or responsibility..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-surface border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
+              className="w-full bg-surface border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
             />
           </div>
 
@@ -325,11 +324,10 @@ export const InteractiveFileTreeStructure: React.FC<InteractiveFileTreeStructure
           <div className="flex items-center space-x-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
             <button
               onClick={() => setSelectedLang('all')}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${
-                selectedLang === 'all'
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${selectedLang === 'all'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-surface text-slate-400 hover:text-white border border-surface-border'
-              }`}
+                  : 'bg-surface text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-surface-border'
+                }`}
             >
               All ({totalFilesCount})
             </button>
@@ -337,11 +335,10 @@ export const InteractiveFileTreeStructure: React.FC<InteractiveFileTreeStructure
               <button
                 key={lang}
                 onClick={() => setSelectedLang(lang)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${
-                  selectedLang === lang
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${selectedLang === lang
                     ? 'bg-primary-600 text-white'
-                    : 'bg-surface text-slate-400 hover:text-white border border-surface-border'
-                }`}
+                    : 'bg-surface text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-surface-border'
+                  }`}
               >
                 {lang}
               </button>

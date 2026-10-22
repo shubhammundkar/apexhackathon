@@ -38,18 +38,18 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           ) : isCompleted ? (
             <CheckCircle2 className="w-5 h-5 text-accent-emerald flex-shrink-0" />
           ) : (
-            <Loader2 className="w-5 h-5 text-primary-400 animate-spin flex-shrink-0" />
+            <Loader2 className="w-5 h-5 text-primary-500 dark:text-primary-400 animate-spin flex-shrink-0" />
           )}
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary-400">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
                 {STAGE_LABELS[progress.stage] || progress.stage}
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                 {progress.percent}%
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{progress.message}</p>
+            <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 line-clamp-1">{progress.message}</p>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           <button
             onClick={onCancel}
             disabled={isCancelling}
-            className="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-surface-border transition-colors disabled:opacity-50"
+            className="px-2.5 py-1 rounded text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 border border-surface-border transition-colors disabled:opacity-50"
           >
             {isCancelling ? 'Cancelling...' : 'Cancel'}
           </button>
@@ -67,13 +67,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       {/* Progress track */}
       <div className="w-full h-2 bg-surface-muted rounded-full overflow-hidden relative">
         <div
-          className={`h-full transition-all duration-300 ease-out rounded-full ${
-            isFailed
+          className={`h-full transition-all duration-300 ease-out rounded-full ${isFailed
               ? 'bg-rose-500'
               : isCompleted
-              ? 'bg-emerald-500'
-              : 'bg-gradient-to-r from-primary-500 via-indigo-500 to-accent-cyan'
-          }`}
+                ? 'bg-emerald-500'
+                : 'bg-gradient-to-r from-primary-500 via-indigo-500 to-accent-cyan'
+            }`}
           style={{ width: `${Math.max(4, Math.min(100, progress.percent))}%` }}
         />
       </div>

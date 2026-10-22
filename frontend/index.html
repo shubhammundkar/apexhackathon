@@ -1,17 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Codebase Explainer AI | Understand Any GitHub Repository</title>
     <meta name="description" content="Paste any GitHub repository URL to dissect, understand its architecture, trace execution flows, inspect files, and ask grounded technical questions with Gemini." />
+    <!-- Initialize Theme before paint -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('app_theme');
+          var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {}
+      })();
+    </script>
     <!-- Google Fonts for Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-background text-slate-100 min-h-screen font-sans antialiased selection:bg-primary-600/30 selection:text-white">
+  <body class="bg-background text-slate-900 dark:text-slate-100 min-h-screen font-sans antialiased selection:bg-primary-500/20 selection:text-primary-700 dark:selection:bg-primary-600/30 dark:selection:text-white transition-colors duration-150">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

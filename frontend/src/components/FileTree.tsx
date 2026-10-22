@@ -50,11 +50,10 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         onClick={handleClick}
         title={node.responsibility ? `${node.path} — ${node.responsibility}` : node.path}
         style={{ paddingLeft: `${level * 14 + 10}px` }}
-        className={`group flex items-center justify-between py-1.5 pr-2.5 cursor-pointer text-xs rounded-md transition-colors select-none ${
-          isSelected
-            ? 'bg-primary-600/20 text-primary-300 font-medium'
-            : 'text-slate-300 hover:bg-surface-subtle hover:text-white'
-        }`}
+        className={`group flex items-center justify-between py-1.5 pr-2.5 cursor-pointer text-xs rounded-md transition-colors select-none ${isSelected
+            ? 'bg-primary-500/15 text-primary-700 dark:text-primary-300 font-semibold'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-surface-subtle hover:text-slate-900 dark:hover:text-white'
+          }`}
       >
         <div className="flex items-center space-x-1.5 truncate mr-2">
           {isDir ? (
@@ -157,19 +156,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ tree, selectedPath, onSelect
             placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface border border-surface-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
+            className="w-full bg-surface border border-surface-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-0.5">
           <span>Files Tree</span>
           <button
             onClick={() => setShowResponsibilities(!showResponsibilities)}
-            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-              showResponsibilities
-                ? 'bg-primary-600/30 text-primary-300 border border-primary-500/40'
-                : 'bg-surface hover:text-white text-slate-400 border border-surface-border'
-            }`}
+            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${showResponsibilities
+                ? 'bg-primary-500/15 text-primary-700 dark:text-primary-300 border border-primary-500/40'
+                : 'bg-surface hover:text-slate-900 dark:hover:text-white text-slate-600 dark:text-slate-400 border border-surface-border'
+              }`}
             title="Toggle 1-line responsibility notes under filenames"
           >
             {showResponsibilities ? '✓ 1-Liners ON' : '+ 1-Liners'}

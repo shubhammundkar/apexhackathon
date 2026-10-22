@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ProgressBar } from '../components/ProgressBar';
 import { TechStackBadge } from '../components/TechStackBadge';
 import { FindingsCard } from '../components/FindingsCard';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { CodeFinding, IngestionProgress, TechStackItem } from '@codebase-explainer/shared';
 
 describe('Frontend UI Components', () => {
@@ -80,4 +81,35 @@ describe('Frontend UI Components', () => {
       expect(handleNav).toHaveBeenCalledWith('src/config.ts', 12, 14);
     });
   });
+
+  describe('ThemeContext and Mode Toggle', () => {
+    it('allows toggling between dark and light modes', () => {
+      const ThemeConsumer = () => {
+        const { theme, toggleTheme } = useTheme();
+        return (
+          <div>
+            <span data-testid="current-theme">{theme}</span>
+            <button onClick={toggleTheme} data-testid="toggle-btn">Toggle</button>
+          </div>
+        );
+      };
+
+      render(
+        <ThemeProvider>
+          <ThemeConsumer />
+        </ThemeProvider>
+      );
+
+      const themeSpan = screen.getByTestId('current-theme');
+      const toggleBtn = screen.getByTestId('toggle-btn');
+
+      const initialTheme = themeSpan.textContent;
+      expect(['light', 'dark']).toContain(initialTheme);
+
+      fireEvent.click(toggleBtn);
+      expect(themeSpan.textContent).toBe(initialTheme === 'dark' ? 'light' : 'dark');
+      expect(document.documentElement.classList.contains(themeSpan.textContent!)).toBe(true);
+    });
+  });
 });
+

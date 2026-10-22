@@ -121,22 +121,22 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-12 w-full space-y-8">
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-600 dark:text-primary-400 text-xs font-medium">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Grounded Codebase Understanding with Gemini 2.5</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Understand any unfamiliar codebase <span className="bg-gradient-to-r from-primary-400 via-indigo-300 to-accent-cyan bg-clip-text text-transparent">in minutes</span>
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+            Understand any unfamiliar codebase <span className="bg-gradient-to-r from-primary-600 via-sky-500 to-indigo-600 dark:from-primary-400 dark:via-indigo-300 dark:to-accent-cyan bg-clip-text text-transparent">in minutes</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
             Paste any public GitHub repository URL. Codebase Explainer AI inspects real source files, maps architecture, visualizes execution flows, surfaces code risks, and answers technical questions with line citations.
           </p>
         </div>
 
         {/* Input Card */}
-        <div className="max-w-3xl mx-auto bg-surface border border-surface-border rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/40 space-y-4">
+        <div className="max-w-3xl mx-auto bg-surface border border-surface-border rounded-2xl p-4 sm:p-6 shadow-xl shadow-sky-500/5 dark:shadow-2xl dark:shadow-black/40 space-y-4 transition-colors">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -155,12 +155,12 @@ export const LandingPage: React.FC = () => {
                   if (errorMessage) setErrorMessage(null);
                 }}
                 disabled={Boolean(activeJobId)}
-                className="w-full bg-surface-subtle border border-surface-border rounded-xl pl-11 pr-32 sm:pr-40 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all font-mono disabled:opacity-50"
+                className="w-full bg-surface-subtle border border-surface-border rounded-xl pl-11 pr-32 sm:pr-40 py-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all font-mono disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={Boolean(activeJobId) || !repoUrl.trim()}
-                className="absolute right-2 px-4 sm:px-6 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-primary-600/30 flex items-center space-x-1.5 disabled:opacity-40 disabled:hover:bg-primary-600"
+                className="absolute right-2 px-4 sm:px-6 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-primary-600/25 flex items-center space-x-1.5 disabled:opacity-40 disabled:hover:bg-primary-600"
               >
                 <span>Analyze</span>
                 <ArrowRight className="w-4 h-4" />
@@ -168,11 +168,11 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Optional Branch Override Toggle */}
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center space-x-1 hover:text-slate-200 transition-colors"
+                className="flex items-center space-x-1 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
               >
                 <GitBranch className="w-3.5 h-3.5" />
                 <span>{showAdvanced ? 'Hide advanced branch option' : 'Specify branch or tag (optional)'}</span>
@@ -187,7 +187,7 @@ export const LandingPage: React.FC = () => {
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
                   disabled={Boolean(activeJobId)}
-                  className="w-full bg-surface-subtle border border-surface-border rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primary-500 font-mono"
+                  className="w-full bg-surface-subtle border border-surface-border rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 font-mono"
                 />
               </div>
             )}
@@ -195,7 +195,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Error Callout */}
           {errorMessage && (
-            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-300">
               <span className="font-semibold block mb-0.5">Analysis Failed</span>
               <span>{errorMessage}</span>
             </div>
@@ -215,7 +215,7 @@ export const LandingPage: React.FC = () => {
 
         {/* Sample Repositories to Try */}
         <div className="max-w-3xl mx-auto space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block px-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block px-1">
             Or try an example repository:
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -226,18 +226,18 @@ export const LandingPage: React.FC = () => {
                   setRepoUrl(sample.url);
                   handleAnalyze(sample.url);
                 }}
-                className="p-3 rounded-xl bg-surface/60 hover:bg-surface border border-surface-border hover:border-slate-700 cursor-pointer transition-all group flex items-start justify-between"
+                className="p-3 rounded-xl bg-surface/70 hover:bg-surface border border-surface-border hover:border-primary-400 dark:hover:border-slate-700 cursor-pointer transition-all group flex items-start justify-between shadow-sm"
               >
                 <div className="space-y-1 truncate mr-2">
                   <div className="flex items-center space-x-1.5">
-                    <Github className="w-3.5 h-3.5 text-primary-400" />
-                    <span className="font-mono text-xs font-semibold text-slate-200 group-hover:text-primary-400 transition-colors">
+                    <Github className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
+                    <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                       {sample.name}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 truncate">{sample.desc}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{sample.desc}</p>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-primary-400 flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
               </div>
             ))}
           </div>
@@ -245,32 +245,32 @@ export const LandingPage: React.FC = () => {
 
         {/* Feature Grid */}
         <div className="pt-8 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-5 rounded-xl bg-surface/50 border border-surface-border space-y-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+          <div className="p-5 rounded-xl bg-surface/70 border border-surface-border space-y-2.5 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-slate-200 text-sm">Architecture Diagrams</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Architecture Diagrams</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Auto-generate interactive Mermaid architecture maps detailing frontend, backend, database, and API layers with data flows.
             </p>
           </div>
 
-          <div className="p-5 rounded-xl bg-surface/50 border border-surface-border space-y-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+          <div className="p-5 rounded-xl bg-surface/70 border border-surface-border space-y-2.5 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-cyan-400 flex items-center justify-center">
               <Terminal className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-slate-200 text-sm">Execution Flow Tracing</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Execution Flow Tracing</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Trace how requests enter the app and execute step-by-step from verified entry points through routes and services.
             </p>
           </div>
 
-          <div className="p-5 rounded-xl bg-surface/50 border border-surface-border space-y-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+          <div className="p-5 rounded-xl bg-surface/70 border border-surface-border space-y-2.5 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 dark:text-rose-400 flex items-center justify-center">
               <ShieldAlert className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-slate-200 text-sm">Security & Code Audits</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Security & Code Audits</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Pinpoint potential bugs, security flaws, missing tests, and architectural smells with exact file and line references.
             </p>
           </div>
@@ -278,7 +278,7 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-surface-border py-4 px-6 text-center text-xs text-slate-400">
+      <footer className="border-t border-surface-border py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
         <p>Built with React, TypeScript, Node.js, Express, and Google Gemini API.</p>
       </footer>
     </div>

@@ -317,11 +317,11 @@ export const WorkspacePage: React.FC = () => {
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden bg-background">
       {/* Workspace Sub-header */}
-      <div className="h-12 border-b border-surface-border px-4 flex items-center justify-between bg-surface/70 backdrop-blur-sm flex-shrink-0">
+      <div className="h-12 border-b border-surface-border px-4 flex items-center justify-between bg-surface/90 backdrop-blur-sm flex-shrink-0 transition-colors">
         <div className="flex items-center space-x-4">
           <Link
             to="/"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-surface-muted transition-colors flex items-center space-x-1 text-xs"
+            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-surface-muted transition-colors flex items-center space-x-1 text-xs"
             title="Analyze another repository"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -329,27 +329,27 @@ export const WorkspacePage: React.FC = () => {
           </Link>
 
           <div className="flex items-center space-x-2">
-            <span className="font-mono text-xs font-bold text-slate-100">
-              {owner} / <span className="text-primary-400">{repo}</span>
+            <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+              {owner} / <span className="text-primary-600 dark:text-primary-400">{repo}</span>
             </span>
             <a
               href={`https://github.com/${owner}/${repo}`}
               target="_blank"
               rel="noreferrer"
-              className="text-slate-400 hover:text-white"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               title="View on GitHub"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
 
-          <div className="hidden md:flex items-center space-x-3 text-xs text-slate-400">
+          <div className="hidden md:flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center space-x-1">
-              <Star className="w-3.5 h-3.5 text-amber-400" />
+              <Star className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>{analysis.stats.indexedFiles} files</span>
             </div>
             <div className="flex items-center space-x-1">
-              <FileText className="w-3.5 h-3.5 text-primary-400" />
+              <FileText className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
               <span>{analysis.stats.totalLines.toLocaleString()} lines</span>
             </div>
           </div>
@@ -360,11 +360,10 @@ export const WorkspacePage: React.FC = () => {
           <nav className="flex space-x-1 bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'overview'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'overview'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <Compass className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Overview</span>
@@ -372,11 +371,10 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('architecture')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'architecture'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'architecture'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Architecture</span>
@@ -387,11 +385,10 @@ export const WorkspacePage: React.FC = () => {
                 setActiveTab('files');
                 setFilesViewMode('directory');
               }}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'files'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'files'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <FileCode className="w-3.5 h-3.5" />
               <span>Files</span>
@@ -399,11 +396,10 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('flow')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'flow'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'flow'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <Terminal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Flow</span>
@@ -411,11 +407,10 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('dependencies')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'dependencies'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'dependencies'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <Package className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Dependencies</span>
@@ -423,16 +418,15 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('findings')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
-                activeTab === 'findings'
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${activeTab === 'findings'
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               <span>Findings</span>
               {analysis.findings.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-semibold">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/20 text-rose-600 dark:text-rose-300 font-semibold">
                   {analysis.findings.length}
                 </span>
               )}
@@ -441,11 +435,10 @@ export const WorkspacePage: React.FC = () => {
 
           <button
             onClick={() => setIsQaOpen(!isQaOpen)}
-            className={`p-1.5 rounded-lg border transition-colors flex items-center space-x-1.5 text-xs font-medium ml-2 ${
-              isQaOpen
-                ? 'bg-primary-600/20 text-primary-400 border-primary-500/30'
-                : 'text-slate-400 hover:text-white bg-surface-subtle border-surface-border'
-            }`}
+            className={`p-1.5 rounded-lg border transition-colors flex items-center space-x-1.5 text-xs font-medium ml-2 ${isQaOpen
+                ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400 border-primary-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-surface-subtle border-surface-border'
+              }`}
             title="Toggle Gemini Q&A Drawer"
           >
             <MessageSquare className="w-4 h-4" />
@@ -470,36 +463,36 @@ export const WorkspacePage: React.FC = () => {
           {activeTab === 'overview' && (
             <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
               {/* Headline Banner */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-xl font-bold text-white tracking-tight">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                     {analysis.overview.projectName}
                   </h2>
-                  <span className="text-xs text-slate-400 font-mono">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                     Model: {analysis.modelUsed}
                   </span>
                 </div>
-                <p className="text-sm font-medium text-primary-300">
+                <p className="text-sm font-medium text-primary-600 dark:text-primary-300">
                   {analysis.overview.tagline}
                 </p>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                   {analysis.overview.detailedSummary}
                 </p>
               </div>
 
               {/* Problem Solved */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-2">
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-2 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                   Problem Solved
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                   {analysis.overview.problemSolved}
                 </p>
               </div>
 
               {/* Detected Tech Stack */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3">
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                   Detected Technology Stack
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -510,8 +503,8 @@ export const WorkspacePage: React.FC = () => {
               </div>
 
               {/* Verified Entry Points */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3">
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                   Execution Entry Points
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -522,22 +515,22 @@ export const WorkspacePage: React.FC = () => {
                       className="p-3.5 rounded-lg bg-surface-subtle border border-surface-border hover:border-primary-500/40 cursor-pointer transition-colors group"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-primary-400 group-hover:underline truncate">
+                        <span className="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400 group-hover:underline truncate">
                           {ep.path}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-primary-600/20 text-primary-300 border border-primary-500/30">
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-primary-700 dark:text-primary-300 border border-primary-500/30">
                           {ep.type}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300 mt-1">{ep.description}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{ep.description}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Quick Start Guide */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4">
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                   Quick Start & Local Setup
                 </h3>
 
@@ -623,18 +616,18 @@ export const WorkspacePage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <Layers className="w-5 h-5 text-primary-400" />
-                      <h2 className="text-lg font-bold text-white tracking-tight">
+                      <Layers className="w-5 h-5 text-primary-500 dark:text-primary-400" />
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                         Architecture & System Blueprint
                       </h2>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Structural breakdown of {analysis.overview.projectName} grounded in repository source files.
                     </p>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-primary-600/20 text-primary-300 border border-primary-500/30">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-primary-700 dark:text-primary-300 border border-primary-500/30">
                       Pattern: {analysis.architecture.pattern}
                     </span>
                   </div>
@@ -644,17 +637,16 @@ export const WorkspacePage: React.FC = () => {
                 <div className="pt-3 border-t border-surface-border flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-accent-amber" />
-                    <span className="text-xs font-semibold text-slate-300">Explanation Mode:</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Explanation Mode:</span>
                   </div>
 
                   <div className="flex bg-surface-subtle p-1 rounded-lg border border-surface-border space-x-1">
                     <button
                       onClick={() => setArchExplanationTier('beginner')}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
-                        archExplanationTier === 'beginner'
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'beginner'
                           ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                        }`}
                     >
                       <span>🟢</span>
                       <span>Beginner (ELI5)</span>
@@ -662,11 +654,10 @@ export const WorkspacePage: React.FC = () => {
 
                     <button
                       onClick={() => setArchExplanationTier('lowlevel')}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
-                        archExplanationTier === 'lowlevel'
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'lowlevel'
                           ? 'bg-amber-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                        }`}
                     >
                       <span>🟡</span>
                       <span>Low-Level Technical</span>
@@ -674,11 +665,10 @@ export const WorkspacePage: React.FC = () => {
 
                     <button
                       onClick={() => setArchExplanationTier('deep')}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
-                        archExplanationTier === 'deep'
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'deep'
                           ? 'bg-purple-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                        }`}
                     >
                       <span>🟣</span>
                       <span>Full Technical Blueprint</span>
@@ -830,11 +820,10 @@ export const WorkspacePage: React.FC = () => {
                   <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
                     <button
                       onClick={() => setFilesViewMode('directory')}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
-                        filesViewMode === 'directory'
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${filesViewMode === 'directory'
                           ? 'bg-primary-600 text-white shadow-sm'
                           : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       <FolderTree className="w-3.5 h-3.5" />
                       <span>File Structure & Purpose Guide ({allFilesList.length})</span>
@@ -843,13 +832,12 @@ export const WorkspacePage: React.FC = () => {
                     <button
                       onClick={() => setFilesViewMode('inspector')}
                       disabled={!currentFileContent}
-                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
-                        filesViewMode === 'inspector'
+                      className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${filesViewMode === 'inspector'
                           ? 'bg-primary-600 text-white shadow-sm'
                           : currentFileContent
-                          ? 'text-slate-400 hover:text-slate-200'
-                          : 'text-slate-600 cursor-not-allowed'
-                      }`}
+                            ? 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-600 cursor-not-allowed'
+                        }`}
                     >
                       <FileCode className="w-3.5 h-3.5" />
                       <span className="truncate max-w-[180px]">
@@ -880,11 +868,11 @@ export const WorkspacePage: React.FC = () => {
                   {/* View Style Switcher Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-surface-border rounded-xl p-4 shadow-sm">
                     <div>
-                      <h3 className="font-bold text-sm text-slate-100 flex items-center space-x-2">
-                        <FolderTree className="w-4 h-4 text-primary-400" />
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                        <FolderTree className="w-4 h-4 text-primary-500 dark:text-primary-400" />
                         <span>Project File Structure & Purpose Directory</span>
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {allFilesList.length} total files annotated with 1-line responsibilities.
                       </p>
                     </div>
@@ -892,22 +880,20 @@ export const WorkspacePage: React.FC = () => {
                     <div className="flex bg-surface-subtle p-0.5 rounded-lg border border-surface-border">
                       <button
                         onClick={() => setFileStructureStyle('tree')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
-                          fileStructureStyle === 'tree'
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${fileStructureStyle === 'tree'
                             ? 'bg-primary-600 text-white shadow-sm'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          }`}
                       >
                         <FolderTree className="w-3.5 h-3.5" />
                         <span>Interactive Tree View</span>
                       </button>
                       <button
                         onClick={() => setFileStructureStyle('catalog')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
-                          fileStructureStyle === 'catalog'
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${fileStructureStyle === 'catalog'
                             ? 'bg-primary-600 text-white shadow-sm'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          }`}
                       >
                         <FileCode className="w-3.5 h-3.5" />
                         <span>Flat Cards View</span>
@@ -941,11 +927,10 @@ export const WorkspacePage: React.FC = () => {
                         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1">
                           <button
                             onClick={() => setSelectedLangFilter('all')}
-                            className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${
-                              selectedLangFilter === 'all'
+                            className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 ${selectedLangFilter === 'all'
                                 ? 'bg-primary-600 text-white'
                                 : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
-                            }`}
+                              }`}
                           >
                             All ({allFilesList.length})
                           </button>
@@ -953,11 +938,10 @@ export const WorkspacePage: React.FC = () => {
                             <button
                               key={lang}
                               onClick={() => setSelectedLangFilter(lang)}
-                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${
-                                selectedLangFilter === lang
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium capitalize transition-colors flex-shrink-0 ${selectedLangFilter === lang
                                   ? 'bg-primary-600 text-white'
                                   : 'bg-surface-subtle text-slate-400 hover:text-white border border-surface-border'
-                              }`}
+                                }`}
                             >
                               {lang}
                             </button>
@@ -975,19 +959,19 @@ export const WorkspacePage: React.FC = () => {
                           filteredFilesList.map((file) => (
                             <div
                               key={file.path}
-                              className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group"
+                              className="bg-surface border border-surface-border hover:border-primary-500/50 rounded-xl p-4 transition-all duration-200 space-y-2 group shadow-sm"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center space-x-2.5 truncate">
-                                  <FileCode className="w-4 h-4 text-primary-400 flex-shrink-0" />
-                                  <span className="font-mono text-xs font-semibold text-slate-100 group-hover:text-primary-300 transition-colors">
+                                  <FileCode className="w-4 h-4 text-primary-500 dark:text-primary-400 flex-shrink-0" />
+                                  <span className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 group-hover:text-primary-600 dark:group-hover:text-primary-300 transition-colors">
                                     {file.path}
                                   </span>
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-400 border border-surface-border">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-subtle text-slate-500 dark:text-slate-400 border border-surface-border">
                                     {file.language}
                                   </span>
                                   {file.lineCount && (
-                                    <span className="text-[11px] text-slate-500 font-mono">
+                                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                                       {file.lineCount} lines
                                     </span>
                                   )}
@@ -995,7 +979,7 @@ export const WorkspacePage: React.FC = () => {
 
                                 <button
                                   onClick={() => handleSelectFile(file.path)}
-                                  className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary-600/20 hover:bg-primary-600 text-primary-300 hover:text-white border border-primary-500/30 transition-all"
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary-600/15 hover:bg-primary-600 text-primary-700 dark:text-primary-300 hover:text-white border border-primary-500/30 transition-all"
                                 >
                                   <span>Inspect Code</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1004,10 +988,10 @@ export const WorkspacePage: React.FC = () => {
 
                               {/* 1-Line Responsibility Banner */}
                               <div className="flex items-start space-x-2 text-xs bg-surface-subtle/80 border border-surface-border/80 px-3 py-2 rounded-lg">
-                                <Layers className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                                <Layers className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400 flex-shrink-0 mt-0.5" />
                                 <div className="leading-snug">
-                                  <span className="font-semibold text-slate-200 mr-1.5">Responsibility:</span>
-                                  <span className="text-slate-300">{file.responsibility}</span>
+                                  <span className="font-semibold text-slate-800 dark:text-slate-200 mr-1.5">Responsibility:</span>
+                                  <span className="text-slate-600 dark:text-slate-300">{file.responsibility}</span>
                                 </div>
                               </div>
                             </div>
@@ -1040,23 +1024,23 @@ export const WorkspacePage: React.FC = () => {
 
           {activeTab === 'flow' && (
             <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-              <div className="bg-surface border border-surface-border rounded-xl p-5">
-                <h3 className="font-semibold text-slate-100 text-sm">
+              <div className="bg-surface border border-surface-border rounded-xl p-5 shadow-sm">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                   Execution Flow & Request Lifecycle
                 </h3>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Traced step-by-step from verified application entry points through internal layers.
                 </p>
               </div>
 
               {analysis.executionFlows.map((flow, flowIdx) => (
-                <div key={flowIdx} className="bg-surface border border-surface-border rounded-xl p-5 space-y-4">
+                <div key={flowIdx} className="bg-surface border border-surface-border rounded-xl p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between border-b border-surface-border pb-3">
                     <div>
-                      <h4 className="font-semibold text-primary-400 text-sm">{flow.name}</h4>
-                      <p className="text-xs text-slate-300 mt-0.5">{flow.description}</p>
+                      <h4 className="font-semibold text-primary-600 dark:text-primary-400 text-sm">{flow.name}</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{flow.description}</p>
                     </div>
-                    <span className="px-2.5 py-1 rounded text-[10px] font-mono bg-surface-subtle text-slate-300 border border-surface-border">
+                    <span className="px-2.5 py-1 rounded text-[10px] font-mono bg-surface-subtle text-slate-600 dark:text-slate-300 border border-surface-border">
                       Trigger: {flow.trigger}
                     </span>
                   </div>
@@ -1069,11 +1053,11 @@ export const WorkspacePage: React.FC = () => {
                         </div>
                         <div className="flex-1 bg-surface-subtle border border-surface-border rounded-lg p-3 space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-semibold text-slate-200">
+                            <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
                               {st.functionOrRoute}
                             </span>
                             <div className="flex items-center space-x-2">
-                              <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-surface text-slate-400 border border-surface-border">
+                              <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-surface text-slate-500 dark:text-slate-400 border border-surface-border">
                                 {st.layer}
                               </span>
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${st.isConfirmed ? 'text-accent-emerald bg-emerald-500/10' : 'text-accent-amber bg-amber-500/10'}`}>
@@ -1081,11 +1065,11 @@ export const WorkspacePage: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-xs text-slate-300">{st.action}</p>
+                          <p className="text-xs text-slate-700 dark:text-slate-300">{st.action}</p>
                           {st.file && (
                             <button
                               onClick={() => handleNavigateToFile(st.file)}
-                              className="text-[11px] font-mono text-primary-400 hover:underline flex items-center space-x-1 pt-1"
+                              className="text-[11px] font-mono text-primary-600 dark:text-primary-400 hover:underline flex items-center space-x-1 pt-1"
                             >
                               <span>{st.file}</span>
                             </button>
@@ -1101,11 +1085,11 @@ export const WorkspacePage: React.FC = () => {
 
           {activeTab === 'dependencies' && (
             <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-              <div className="bg-surface border border-surface-border rounded-xl p-5 flex items-center justify-between">
+              <div className="bg-surface border border-surface-border rounded-xl p-5 flex items-center justify-between shadow-sm">
                 <div>
-                  <h3 className="font-semibold text-slate-100 text-sm">Package & Dependency Manifest</h3>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    Package Manager: <span className="font-mono text-primary-400">{analysis.dependenciesSummary.packageManager || 'Not detected'}</span>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Package & Dependency Manifest</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                    Package Manager: <span className="font-mono text-primary-600 dark:text-primary-400">{analysis.dependenciesSummary.packageManager || 'Not detected'}</span>
                     {' • '}
                     Lockfile Present: <span className="text-accent-emerald font-semibold">{analysis.dependenciesSummary.hasLockfile ? 'Yes' : 'No'}</span>
                   </p>
@@ -1113,8 +1097,8 @@ export const WorkspacePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-surface border border-surface-border rounded-xl p-5 space-y-3">
-                  <h4 className="font-semibold text-slate-200 text-xs uppercase tracking-wider">
+                <div className="bg-surface border border-surface-border rounded-xl p-5 space-y-3 shadow-sm">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
                     Runtime Dependencies ({analysis.dependenciesSummary.runtimeDependencies.length})
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -1124,8 +1108,8 @@ export const WorkspacePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-surface border border-surface-border rounded-xl p-5 space-y-3">
-                  <h4 className="font-semibold text-slate-200 text-xs uppercase tracking-wider">
+                <div className="bg-surface border border-surface-border rounded-xl p-5 space-y-3 shadow-sm">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
                     Development Dependencies ({analysis.dependenciesSummary.devDependencies.length})
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -1140,11 +1124,11 @@ export const WorkspacePage: React.FC = () => {
 
           {activeTab === 'findings' && (
             <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-4">
-              <div className="bg-surface border border-surface-border rounded-xl p-5">
-                <h3 className="font-semibold text-slate-100 text-sm">
+              <div className="bg-surface border border-surface-border rounded-xl p-5 shadow-sm">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                   Code Quality, Security & Architecture Audit
                 </h3>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Surfaced code smells, potential bugs, missing tests, and security weaknesses grounded in actual repository files.
                 </p>
               </div>

@@ -6,13 +6,13 @@ interface TechStackBadgeProps {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  framework: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/25' },
-  language: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/25' },
-  database: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/25' },
-  tool: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/25' },
-  runtime: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/25' },
-  library: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/25' },
-  dev: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/25' },
+  framework: { bg: 'bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-500/25' },
+  language: { bg: 'bg-sky-500/10', text: 'text-sky-700 dark:text-cyan-400', border: 'border-sky-500/25' },
+  database: { bg: 'bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-500/25' },
+  tool: { bg: 'bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-500/25' },
+  runtime: { bg: 'bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', border: 'border-purple-500/25' },
+  library: { bg: 'bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-500/25' },
+  dev: { bg: 'bg-slate-500/10', text: 'text-slate-700 dark:text-slate-400', border: 'border-slate-500/25' },
 };
 
 export const TechStackBadge: React.FC<TechStackBadgeProps> = ({ item }) => {

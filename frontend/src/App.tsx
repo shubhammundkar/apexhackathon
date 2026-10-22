@@ -33,7 +33,7 @@ export const App: React.FC = () => {
   const activeRepo = match ? `${match[1]}/${match[2]}` : undefined;
 
   return (
-    <div className="min-h-screen bg-background text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-150">
       <Navbar
         onOpenSettings={() => setIsSettingsOpen(true)}
         geminiConfigured={serverGeminiConfigured}

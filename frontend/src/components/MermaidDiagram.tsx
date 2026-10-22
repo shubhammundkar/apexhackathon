@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { ZoomIn, ZoomOut, RotateCcw, AlertCircle, Copy, Check } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface MermaidDiagramProps {
   chart: string;
 }
 
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
+  const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -14,19 +16,34 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const isDark = theme === 'dark';
+
     mermaid.initialize({
       startOnLoad: false,
-      theme: 'dark',
-      themeVariables: {
-        darkMode: true,
-        background: '#111520',
-        primaryColor: '#6366f1',
-        primaryTextColor: '#f8fafc',
-        primaryBorderColor: '#4f46e5',
-        lineColor: '#64748b',
-        secondaryColor: '#1e293b',
-        tertiaryColor: '#0f172a',
-      },
+      theme: isDark ? 'dark' : 'default',
+      themeVariables: isDark
+        ? {
+            darkMode: true,
+            background: '#111520',
+            primaryColor: '#6366f1',
+            primaryTextColor: '#f8fafc',
+            primaryBorderColor: '#4f46e5',
+            lineColor: '#64748b',
+            secondaryColor: '#1e293b',
+            tertiaryColor: '#0f172a',
+          }
+        : {
+            darkMode: false,
+            background: '#ffffff',
+            primaryColor: '#e0f2fe',
+            primaryTextColor: '#0f172a',
+            primaryBorderColor: '#0284c7',
+            lineColor: '#0284c7',
+            secondaryColor: '#f0f9ff',
+            tertiaryColor: '#ffffff',
+            mainBkg: '#f0f9ff',
+            nodeBorder: '#0284c7',
+          },
       fontFamily: 'Inter, sans-serif',
       securityLevel: 'loose',
     });
@@ -47,7 +64,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     };
 
     renderChart();
-  }, [chart]);
+  }, [chart, theme]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(chart);
