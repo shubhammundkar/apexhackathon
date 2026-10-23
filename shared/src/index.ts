@@ -37,6 +37,7 @@ export const AskQuestionRequestSchema = z.object({
   question: z.string().trim().min(2, 'Question must be at least 2 characters').max(2000, 'Question too long'),
   filePath: z.string().optional(),
   apiKey: z.string().optional(),
+  model: z.string().optional(),
 });
 
 export type AskQuestionRequest = z.infer<typeof AskQuestionRequestSchema>;

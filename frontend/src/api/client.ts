@@ -101,7 +101,7 @@ export const apiClient = {
   askQuestion: (
     owner: string,
     repo: string,
-    params: { question: string; filePath?: string; apiKey?: string }
+    params: { question: string; filePath?: string; apiKey?: string; model?: string }
   ) =>
     request<QAResponse>(`/repositories/${owner}/${repo}/questions`, {
       method: 'POST',
@@ -111,7 +111,7 @@ export const apiClient = {
   askQuestionStream: async (
     owner: string,
     repo: string,
-    params: { question: string; filePath?: string; apiKey?: string },
+    params: { question: string; filePath?: string; apiKey?: string; model?: string },
     callbacks: {
       onCitations?: (citations: any[]) => void;
       onChunk?: (text: string) => void;
@@ -134,7 +134,7 @@ export const apiClient = {
 
     let fullAnswer = '';
     let citations: any[] = [];
-    let modelUsed = 'gemini-2.5-flash';
+    let modelUsed = 'gemini-3.5-flash';
     let buffer = '';
 
     while (true) {

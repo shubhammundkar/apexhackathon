@@ -22,8 +22,14 @@ export interface AnalysisGenerationResult {
 export class GeminiService {
   private defaultApiKey: string;
   private defaultModel: string;
+  private readonly fallbackModels = [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+  ];
 
-  constructor(apiKey: string = '', model: string = 'gemini-3.8-flash') {
+  constructor(apiKey: string = '', model: string = 'gemini-3.5-flash') {
     this.defaultApiKey = apiKey.trim();
     this.defaultModel = model.trim();
   }
@@ -35,7 +41,7 @@ export class GeminiService {
     }
     return {
       client: new GoogleGenerativeAI(key),
-      modelName: this.defaultModel || 'gemini-3.8-flash',
+      modelName: this.defaultModel || 'gemini-3.5-flash',
     };
   }
 
@@ -55,7 +61,10 @@ export class GeminiService {
     modelName?: string
   ): Promise<AnalysisGenerationResult> {
     const { client } = this.getClient(userApiKey);
-    const chosenModel = modelName || this.defaultModel || 'gemini-2.5-flash';
+    const chosenModel = modelName || this.defaultModel || 'gemini-3.5-flash';
+    const modelsToTry = [chosenModel, ...this.fallbackModels].filter(
+      (m, idx, arr) => arr.indexOf(m) === idx
+    );
 
     // Prepare code context sample (top files like package.json, entrypoints, README)
     const contextFiles = files.slice(0, 15).map((f) => {
@@ -151,57 +160,39 @@ Ensure the mermaidDiagram is valid Mermaid syntax (avoid unescaped special chara
 DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
 `;
 
-    try {
-      const model = client.getGenerativeModel({
-        model: chosenModel,
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json',
-        },
-      });
+    let lastError: any = null;
+    for (const modelToUse of modelsToTry) {
+      try {
+        const model = client.getGenerativeModel({
+          model: modelToUse,
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+          },
+        });
 
-      const response = await model.generateContent(prompt);
-      const text = response.response.text();
-      const parsed = JSON.parse(text);
+        const response = await model.generateContent(prompt);
+        const text = response.response.text();
+        const parsed = JSON.parse(text);
 
-      return {
-        overview: {
-          ...parsed.overview,
-          detectedStack: manifest.stack,
-          entryPoints: manifest.entryPoints,
-        },
-        architecture: parsed.architecture,
-        executionFlows: parsed.executionFlows || [],
-        findings: parsed.findings || [],
-        modelUsed: chosenModel,
-      };
-    } catch (err: any) {
-      if (err.status === 404 || err.message?.includes('not found') || err.message?.includes('no longer available')) {
-        try {
-          const fallbackModelName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
-          const fallbackModel = client.getGenerativeModel({
-            model: fallbackModelName,
-            generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-          });
-          const response = await fallbackModel.generateContent(prompt);
-          const parsed = JSON.parse(response.response.text());
-          return {
-            overview: {
-              ...parsed.overview,
-              detectedStack: manifest.stack,
-              entryPoints: manifest.entryPoints,
-            },
-            architecture: parsed.architecture,
-            executionFlows: parsed.executionFlows || [],
-            findings: parsed.findings || [],
-            modelUsed: fallbackModelName,
-          };
-        } catch (innerErr: any) {
-          throw new Error(`Gemini API Error: ${innerErr.message || innerErr}`);
-        }
+        return {
+          overview: {
+            ...parsed.overview,
+            detectedStack: manifest.stack,
+            entryPoints: manifest.entryPoints,
+          },
+          architecture: parsed.architecture,
+          executionFlows: parsed.executionFlows || [],
+          findings: parsed.findings || [],
+          modelUsed: modelToUse,
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[GeminiService] Model ${modelToUse} failed in generateRepositoryAnalysis: ${err.message || err}. Trying fallback...`);
       }
-      throw new Error(`Gemini API Error: ${err.message || err}`);
     }
+
+    throw new Error(`Gemini API Error: ${lastError?.message || lastError}`);
   }
 
   /**
@@ -216,7 +207,10 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
     modelName?: string
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
-    const chosenModel = modelName || this.defaultModel || 'gemini-3.8-flash';
+    const chosenModel = modelName || this.defaultModel || 'gemini-3.5-flash';
+    const modelsToTry = [chosenModel, ...this.fallbackModels].filter(
+      (m, idx, arr) => arr.indexOf(m) === idx
+    );
 
     const evidenceText = citations.map((c, i) => `
 [EVIDENCE #${i + 1}]
@@ -257,37 +251,31 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
 [Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
 `;
 
-    try {
-      const model = client.getGenerativeModel({
-        model: chosenModel,
-        generationConfig: { temperature: 0.3 },
-      });
+    let lastError: any = null;
+    for (const modelToUse of modelsToTry) {
+      try {
+        const model = client.getGenerativeModel({
+          model: modelToUse,
+          generationConfig: { temperature: 0.3 },
+        });
 
-      const response = await model.generateContent(prompt);
-      const answer = response.response.text();
+        const response = await model.generateContent(prompt);
+        const answer = response.response.text();
 
-      return {
-        question,
-        answer,
-        citations,
-        modelUsed: chosenModel,
-        answeredAt: new Date().toISOString(),
-      };
-    } catch (err: any) {
-      if (err.message?.includes('not found') || err.message?.includes('no longer available') || err.status === 404) {
-        const fallbackName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
-        const fallback = client.getGenerativeModel({ model: fallbackName, generationConfig: { temperature: 0.3 } });
-        const res = await fallback.generateContent(prompt);
         return {
           question,
-          answer: res.response.text(),
+          answer,
           citations,
-          modelUsed: fallbackName,
+          modelUsed: modelToUse,
           answeredAt: new Date().toISOString(),
         };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[GeminiService] Model ${modelToUse} failed in answerQuestion: ${err.message || err}. Trying fallback...`);
       }
-      throw new Error(`Gemini Q&A Error: ${err.message || err}`);
     }
+
+    throw new Error(`Gemini Q&A Error: ${lastError?.message || lastError}`);
   }
 
   /**
@@ -303,7 +291,10 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
     modelName?: string
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
-    const chosenModel = modelName || this.defaultModel || 'gemini-3.8-flash';
+    const chosenModel = modelName || this.defaultModel || 'gemini-3.5-flash';
+    const modelsToTry = [chosenModel, ...this.fallbackModels].filter(
+      (m, idx, arr) => arr.indexOf(m) === idx
+    );
 
     const evidenceText = citations.map((c, i) => `
 [EVIDENCE #${i + 1}]
@@ -344,51 +335,37 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
 [Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
 `;
 
-    try {
-      const model = client.getGenerativeModel({
-        model: chosenModel,
-        generationConfig: { temperature: 0.3 },
-      });
+    let lastError: any = null;
+    for (const modelToUse of modelsToTry) {
+      try {
+        const model = client.getGenerativeModel({
+          model: modelToUse,
+          generationConfig: { temperature: 0.3 },
+        });
 
-      const result = await model.generateContentStream(prompt);
-      let fullText = '';
-      for await (const chunk of result.stream) {
-        const text = chunk.text();
-        fullText += text;
-        onChunk(text);
-      }
+        const result = await model.generateContentStream(prompt);
+        let fullText = '';
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          fullText += text;
+          onChunk(text);
+        }
 
-      return {
-        question,
-        answer: fullText,
-        citations,
-        modelUsed: chosenModel,
-        answeredAt: new Date().toISOString(),
-      };
-    } catch (err: any) {
-      if (err.message?.includes('not found') || err.message?.includes('no longer available') || err.status === 404) {
-        const fallbackName = chosenModel === 'gemini-3.8-flash' ? 'gemini-1.5-flash' : 'gemini-3.8-flash';
-        try {
-          const fallback = client.getGenerativeModel({ model: fallbackName, generationConfig: { temperature: 0.3 } });
-          const result = await fallback.generateContentStream(prompt);
-          let fullText = '';
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            fullText += text;
-            onChunk(text);
-          }
+        if (fullText.trim().length > 0) {
           return {
             question,
             answer: fullText,
             citations,
-            modelUsed: fallbackName,
+            modelUsed: modelToUse,
             answeredAt: new Date().toISOString(),
           };
-        } catch (innerErr: any) {
-          throw new Error(`Gemini Streaming Error: ${innerErr.message || innerErr}`);
         }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[GeminiService] Streaming with model ${modelToUse} failed: ${err.message || err}. Trying fallback...`);
       }
-      throw new Error(`Gemini Streaming Error: ${err.message || err}`);
     }
+
+    throw new Error(`Gemini Streaming Error: ${lastError?.message || lastError}`);
   }
 }

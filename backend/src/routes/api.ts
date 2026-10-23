@@ -241,7 +241,7 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
       });
     }
 
-    const { question, filePath, apiKey } = parseResult.data;
+    const { question, filePath, apiKey, model } = parseResult.data;
 
     // Retrieve citations from indexing engine
     const citations = repo.indexer.search(question, 6, filePath);
@@ -253,7 +253,8 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
       citations,
       repo.metadata,
       filePath,
-      apiKey
+      apiKey,
+      model
     );
 
     res.json(qaResponse);
@@ -280,7 +281,7 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
     });
   }
 
-  const { question, filePath, apiKey } = parseResult.data;
+  const { question, filePath, apiKey, model } = parseResult.data;
   const citations = repo.indexer.search(question, 6, filePath);
 
   // Set SSE Headers
@@ -303,7 +304,8 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
         res.write(`event: chunk\ndata: ${JSON.stringify({ text: textChunk })}\n\n`);
       },
       filePath,
-      apiKey
+      apiKey,
+      model
     );
 
     res.write(`event: done\ndata: ${JSON.stringify(finalAnswer)}\n\n`);

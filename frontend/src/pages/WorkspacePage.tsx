@@ -261,6 +261,7 @@ export const WorkspacePage: React.FC = () => {
   ) => {
     if (!owner || !repo) throw new Error('Repository is missing');
     const userApiKey = localStorage.getItem('gemini_custom_api_key') || undefined;
+    const userModel = localStorage.getItem('gemini_selected_model') || undefined;
     return await apiClient.askQuestionStream(
       owner,
       repo,
@@ -268,6 +269,7 @@ export const WorkspacePage: React.FC = () => {
         question,
         filePath,
         apiKey: userApiKey,
+        model: userModel,
       },
       {
         onChunk,

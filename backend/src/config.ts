@@ -11,7 +11,7 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   GEMINI_API_KEY: z.string().optional().default(''),
-  GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
   GITHUB_TOKEN: z.string().optional().default(''),
   MAX_REPO_FILES: z.coerce.number().default(500),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(300000), // ~300KB
