@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@codebase-explainer/shared": "*",
+    "@codebase-explainer/shared": "workspace:*",
     "@tanstack/react-query": "^5.56.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.441.0",

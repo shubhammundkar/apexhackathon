@@ -211,7 +211,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">Codebase Q&A</span>
+              <span className="font-bold text-xs text-slate-900 dark:text-slate-100 block">Codebase Mentor AI</span>
               {isHistoryLoaded && messages.length > 0 && (
                 <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded font-medium border border-emerald-500/20">
                   <Database className="w-2.5 h-2.5" />
@@ -219,7 +219,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">3-Way Explanations (Beginner / Low-Level / Deep Tech)</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">Grounded code analysis & 3-way explanations</span>
           </div>
         </div>
         <button
