@@ -28,6 +28,7 @@ interface QAPanelProps {
   onClose: () => void;
   owner?: string;
   repo?: string;
+  width?: number;
 }
 
 interface MessageItem {
@@ -79,6 +80,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
   onClose,
   owner,
   repo,
+  width,
 }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
@@ -202,7 +204,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface border-l border-surface-border w-full sm:w-[450px] lg:w-[520px] shadow-2xl flex-shrink-0 z-30 transition-colors">
+    <div style={width ? { width: `${width}px` } : undefined} className={`flex flex-col h-full bg-surface border-l border-surface-border shadow-2xl flex-shrink-0 z-30 transition-colors ${width ? 'w-full md:w-auto' : 'w-full sm:w-[450px] lg:w-[520px]'}`}>
       {/* Header */}
       <div className="h-13 border-b border-surface-border px-4 py-2 flex items-center justify-between bg-surface-subtle/80 flex-shrink-0">
         <div className="flex items-center space-x-2">

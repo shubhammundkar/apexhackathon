@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import {
@@ -72,6 +72,109 @@ export const WorkspacePage: React.FC = () => {
 
   // Architecture 3-Way Mode (Beginner, Low-Level Technical, Full Technical Blueprint)
   const [archExplanationTier, setArchExplanationTier] = useState<'beginner' | 'lowlevel' | 'deep'>('beginner');
+
+  // Resizable Panels State (File Tree: ~20%, AI Assistant: ~25%)
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return Math.max(200, Math.min(380, Math.round(window.innerWidth * 0.20)));
+    }
+    return 280;
+  });
+
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return Math.max(300, Math.min(540, Math.round(window.innerWidth * 0.25)));
+    }
+    return 380;
+  });
+
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+  const [isDraggingRight, setIsDraggingRight] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Drag handler for Left Divider (File Tree <-> Middle Panel)
+  const handleLeftResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsDraggingLeft(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = moveEvent.clientX - containerRect.left;
+
+      const currentRight = isQaOpen ? rightPanelWidth : 0;
+      const maxLeft = Math.max(260, containerRect.width - 340 - currentRight);
+      const clampedLeft = Math.max(180, Math.min(maxLeft, Math.round(newWidth)));
+      setLeftPanelWidth(clampedLeft);
+    };
+
+    const onPointerUp = () => {
+      setIsDraggingLeft(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  };
+
+  // Drag handler for Right Divider (Middle Panel <-> AI Assistant)
+  const handleRightResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsDraggingRight(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = containerRect.right - moveEvent.clientX;
+
+      const maxRight = Math.max(360, containerRect.width - 340 - leftPanelWidth);
+      const clampedRight = Math.max(260, Math.min(maxRight, Math.round(newWidth)));
+      setRightPanelWidth(clampedRight);
+    };
+
+    const onPointerUp = () => {
+      setIsDraggingRight(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  };
+
+  // Keep panel widths bounded on browser window resize
+  useEffect(() => {
+    const handleWindowResize = () => {
+      if (!containerRef.current) return;
+      const totalWidth = containerRef.current.clientWidth;
+      const minMiddle = 320;
+      const currentRight = isQaOpen ? rightPanelWidth : 0;
+
+      if (leftPanelWidth + currentRight + minMiddle > totalWidth) {
+        const available = Math.max(500, totalWidth - minMiddle);
+        setLeftPanelWidth((prev) => Math.max(180, Math.min(prev, Math.round(available * 0.35))));
+        if (isQaOpen) {
+          setRightPanelWidth((prev) => Math.max(260, Math.min(prev, Math.round(available * 0.45))));
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, [isQaOpen, leftPanelWidth, rightPanelWidth]);
 
   useEffect(() => {
     if (!owner || !repo) return;
@@ -450,9 +553,12 @@ export const WorkspacePage: React.FC = () => {
       </div>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left File Tree Sidebar (Visible when Files tab is open or on large screens) */}
-        <aside className="w-64 lg:w-72 flex-shrink-0 hidden md:block">
+      <div ref={containerRef} className="flex-1 flex overflow-hidden relative">
+        {/* Left File Tree Sidebar */}
+        <aside
+          style={{ width: `${leftPanelWidth}px` }}
+          className="flex-shrink-0 hidden md:flex flex-col overflow-hidden h-full"
+        >
           <FileTree
             tree={fileTree}
             selectedPath={selectedFilePath || undefined}
@@ -460,8 +566,23 @@ export const WorkspacePage: React.FC = () => {
           />
         </aside>
 
+        {/* Left Resizer Divider (File Tree <-> Middle Panel) */}
+        <div
+          onPointerDown={handleLeftResizeStart}
+          className={`hidden md:flex w-1.5 hover:w-1.5 active:w-1.5 cursor-col-resize items-center justify-center flex-shrink-0 z-20 select-none transition-colors group ${
+            isDraggingLeft ? 'bg-primary-500' : 'bg-surface-border hover:bg-primary-500'
+          }`}
+          title="Drag to resize File Tree"
+        >
+          <div
+            className={`w-0.5 h-8 rounded-full transition-colors ${
+              isDraggingLeft ? 'bg-white' : 'bg-slate-400 dark:bg-slate-500 group-hover:bg-white'
+            }`}
+          />
+        </div>
+
         {/* Center Content Tab View */}
-        <main className="flex-1 overflow-y-auto bg-surface-subtle/20">
+        <main className="flex-1 min-w-[320px] overflow-y-auto bg-surface-subtle/20 h-full">
           {activeTab === 'overview' && (
             <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
               {/* Headline Banner */}
@@ -1159,9 +1280,27 @@ export const WorkspacePage: React.FC = () => {
           )}
         </main>
 
+        {/* Right Resizer Divider (Middle Panel <-> AI Assistant) */}
+        {isQaOpen && (
+          <div
+            onPointerDown={handleRightResizeStart}
+            className={`hidden md:flex w-1.5 hover:w-1.5 active:w-1.5 cursor-col-resize items-center justify-center flex-shrink-0 z-20 select-none transition-colors group ${
+              isDraggingRight ? 'bg-primary-500' : 'bg-surface-border hover:bg-primary-500'
+            }`}
+            title="Drag to resize AI Assistant"
+          >
+            <div
+              className={`w-0.5 h-8 rounded-full transition-colors ${
+                isDraggingRight ? 'bg-white' : 'bg-slate-400 dark:bg-slate-500 group-hover:bg-white'
+              }`}
+            />
+          </div>
+        )}
+
         {/* Right Collapsible Gemini Q&A Drawer */}
         <QAPanel
           isOpen={isQaOpen}
+          width={rightPanelWidth}
           onClose={() => setIsQaOpen(false)}
           onAskQuestion={handleAskQuestion}
           currentFilePath={selectedFilePath || undefined}
