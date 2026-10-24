@@ -532,17 +532,17 @@ export const WorkspacePage: React.FC = () => {
 
               {/* Quick Start Guide */}
               <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[#111827] dark:text-white uppercase tracking-wider">
                   Quick Start & Local Setup
                 </h3>
 
                 {/* Prerequisites */}
                 {analysis.overview.quickStartGuide.prerequisites.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-slate-400 block mb-1.5">
+                    <span className="text-xs font-bold text-[#374151] dark:text-slate-200 block mb-1.5">
                       Prerequisites:
                     </span>
-                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-[#1F2937] dark:text-slate-200 space-y-1 font-medium">
                       {analysis.overview.quickStartGuide.prerequisites.map((p, i) => (
                         <li key={i}>{p}</li>
                       ))}
@@ -553,22 +553,23 @@ export const WorkspacePage: React.FC = () => {
                 {/* Install Commands */}
                 {analysis.overview.quickStartGuide.installCommands.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-slate-400 block mb-1.5">
+                    <span className="text-xs font-bold text-[#374151] dark:text-slate-200 block mb-1.5">
                       Install Dependencies:
                     </span>
                     <div className="space-y-1.5">
                       {analysis.overview.quickStartGuide.installCommands.map((cmd, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-subtle border border-surface-border font-mono text-xs text-slate-200"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-subtle border border-surface-border font-mono text-xs text-[#111827] dark:text-slate-100 font-semibold"
                         >
-                          <code>{cmd}</code>
+                          <code className="text-[#111827] dark:text-slate-100 font-semibold">{cmd}</code>
                           <button
                             onClick={() => copyToClipboard(cmd, `inst_${i}`)}
-                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-muted transition-colors"
+                            className="p-1 rounded text-[#374151] dark:text-slate-300 hover:text-[#111827] dark:hover:text-white hover:bg-surface-muted transition-colors"
+                            title="Copy command"
                           >
                             {copiedCommand === `inst_${i}` ? (
-                              <Check className="w-3.5 h-3.5 text-accent-emerald" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-accent-emerald" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -582,22 +583,23 @@ export const WorkspacePage: React.FC = () => {
                 {/* Run Commands */}
                 {analysis.overview.quickStartGuide.runCommands.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-slate-400 block mb-1.5">
+                    <span className="text-xs font-bold text-[#374151] dark:text-slate-200 block mb-1.5">
                       Run Application:
                     </span>
                     <div className="space-y-1.5">
                       {analysis.overview.quickStartGuide.runCommands.map((cmd, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-subtle border border-surface-border font-mono text-xs text-slate-200"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-subtle border border-surface-border font-mono text-xs text-[#111827] dark:text-slate-100 font-semibold"
                         >
-                          <code>{cmd}</code>
+                          <code className="text-[#111827] dark:text-slate-100 font-semibold">{cmd}</code>
                           <button
                             onClick={() => copyToClipboard(cmd, `run_${i}`)}
-                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-surface-muted transition-colors"
+                            className="p-1 rounded text-[#374151] dark:text-slate-300 hover:text-[#111827] dark:hover:text-white hover:bg-surface-muted transition-colors"
+                            title="Copy command"
                           >
                             {copiedCommand === `run_${i}` ? (
-                              <Check className="w-3.5 h-3.5 text-accent-emerald" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-accent-emerald" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -618,18 +620,18 @@ export const WorkspacePage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <Layers className="w-5 h-5 text-primary-500 dark:text-primary-400" />
-                      <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                      <Layers className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                      <h2 className="text-lg font-bold text-[#111827] dark:text-white tracking-tight">
                         Architecture & System Blueprint
                       </h2>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-xs text-[#374151] dark:text-slate-300 mt-1 font-medium">
                       Structural breakdown of {analysis.overview.projectName} grounded in repository source files.
                     </p>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-primary-700 dark:text-primary-300 border border-primary-500/30">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-[#111827] dark:text-primary-200 border border-primary-500/30">
                       Pattern: {analysis.architecture.pattern}
                     </span>
                   </div>
@@ -639,7 +641,7 @@ export const WorkspacePage: React.FC = () => {
                 <div className="pt-3 border-t border-surface-border flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-accent-amber" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Explanation Mode:</span>
+                    <span className="text-xs font-bold text-[#374151] dark:text-slate-200">Explanation Mode:</span>
                   </div>
 
                   <div className="flex bg-surface-subtle p-1 rounded-lg border border-surface-border space-x-1">
@@ -647,7 +649,7 @@ export const WorkspacePage: React.FC = () => {
                       onClick={() => setArchExplanationTier('beginner')}
                       className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'beginner'
                           ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
                       <span>🟢</span>
@@ -658,7 +660,7 @@ export const WorkspacePage: React.FC = () => {
                       onClick={() => setArchExplanationTier('lowlevel')}
                       className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'lowlevel'
                           ? 'bg-amber-600 text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
                       <span>🟡</span>
@@ -669,7 +671,7 @@ export const WorkspacePage: React.FC = () => {
                       onClick={() => setArchExplanationTier('deep')}
                       className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center space-x-1.5 transition-colors ${archExplanationTier === 'deep'
                           ? 'bg-purple-600 text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
                       <span>🟣</span>
@@ -682,33 +684,33 @@ export const WorkspacePage: React.FC = () => {
               {/* Dynamic Architecture Explanation Box Based on Selected Tier */}
               {archExplanationTier === 'beginner' && (
                 <div className="bg-surface border border-emerald-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-emerald-950/20">
-                  <div className="flex items-center space-x-2 text-emerald-400 text-sm font-bold">
-                    <BookOpen className="w-4 h-4" />
+                  <div className="flex items-center space-x-2 text-emerald-800 dark:text-emerald-300 text-sm font-bold">
+                    <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                     <span>How This Project Works (Beginner / Plain English)</span>
                   </div>
 
-                  <p className="text-sm text-slate-200 leading-relaxed font-sans">
+                  <p className="text-sm text-[#1F2937] dark:text-slate-100 leading-relaxed font-sans">
                     <strong>{analysis.overview.projectName}</strong> is built to solve a clear problem:{' '}
-                    <span className="text-emerald-300 font-medium">{analysis.overview.problemSolved}</span>.
+                    <span className="text-emerald-800 dark:text-emerald-300 font-bold">{analysis.overview.problemSolved}</span>.
                     Think of the application as a coordinated team: the frontend acts as the welcoming storefront that gathers user instructions; the backend server operates as the kitchen manager dispatching tasks; and the database or AI models serve as the intelligence hub providing instant, verified results.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
-                      <div className="text-xs font-bold text-primary-300">1. User Interface (Frontend)</div>
-                      <p className="text-[11px] text-slate-400">
+                      <div className="text-xs font-bold text-[#111827] dark:text-primary-300">1. User Interface (Frontend)</div>
+                      <p className="text-[11px] text-[#1F2937] dark:text-slate-300 leading-normal">
                         Presents the interactive dashboard where you enter queries, inspect files, and browse diagrams.
                       </p>
                     </div>
                     <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
-                      <div className="text-xs font-bold text-accent-cyan">2. Core Server (Backend)</div>
-                      <p className="text-[11px] text-slate-400">
+                      <div className="text-xs font-bold text-[#111827] dark:text-accent-cyan">2. Core Server (Backend)</div>
+                      <p className="text-[11px] text-[#1F2937] dark:text-slate-300 leading-normal">
                         Processes requests, coordinates security, and runs application logic.
                       </p>
                     </div>
                     <div className="p-3.5 rounded-lg bg-surface-subtle/80 border border-surface-border space-y-1">
-                      <div className="text-xs font-bold text-accent-amber">3. Reasoning & Storage</div>
-                      <p className="text-[11px] text-slate-400">
+                      <div className="text-xs font-bold text-[#111827] dark:text-accent-amber">3. Reasoning & Storage</div>
+                      <p className="text-[11px] text-[#1F2937] dark:text-slate-300 leading-normal">
                         Uses AI intelligence and indexing to provide exact citations without guessing.
                       </p>
                     </div>
@@ -718,21 +720,21 @@ export const WorkspacePage: React.FC = () => {
 
               {archExplanationTier === 'lowlevel' && (
                 <div className="bg-surface border border-amber-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-amber-950/20">
-                  <div className="flex items-center space-x-2 text-amber-400 text-sm font-bold">
-                    <Cpu className="w-4 h-4" />
+                  <div className="flex items-center space-x-2 text-amber-800 dark:text-amber-300 text-sm font-bold">
+                    <Cpu className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                     <span>Low-Level System Mechanics & Component Interaction</span>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                    The codebase follows a <strong>{analysis.architecture.pattern}</strong> style.{' '}
+                  <p className="text-xs text-[#1F2937] dark:text-slate-200 leading-relaxed font-sans">
+                    The codebase follows a <strong className="text-[#111827] dark:text-white font-bold">{analysis.architecture.pattern}</strong> style.{' '}
                     {analysis.architecture.description}
                   </p>
 
                   <div className="bg-surface-subtle border border-surface-border rounded-lg p-4 space-y-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
                       Data Flow & Request Lifecycle
                     </span>
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs text-[#1F2937] dark:text-slate-200 leading-relaxed font-medium">
                       {analysis.architecture.dataFlowDescription ||
                         'Clients issue requests to entrypoints, which serialize through middleware pipelines, execute business logic services, query cache/indexing layers, and stream back typed payloads.'}
                     </p>
@@ -742,14 +744,14 @@ export const WorkspacePage: React.FC = () => {
 
               {archExplanationTier === 'deep' && (
                 <div className="bg-surface border border-purple-500/30 rounded-xl p-6 space-y-4 bg-gradient-to-br from-surface to-purple-950/20">
-                  <div className="flex items-center space-x-2 text-purple-400 text-sm font-bold">
-                    <Code2 className="w-4 h-4" />
+                  <div className="flex items-center space-x-2 text-purple-900 dark:text-purple-300 text-sm font-bold">
+                    <Code2 className="w-4 h-4 text-purple-800 dark:text-purple-300" />
                     <span>Full Technical Blueprint & Architectural Layers</span>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className="text-xs text-[#1F2937] dark:text-slate-200 leading-relaxed">
                     Systems architecture powered by{' '}
-                    <span className="text-purple-300 font-mono">
+                    <span className="text-purple-900 dark:text-purple-300 font-mono font-bold">
                       {analysis.overview.detectedStack.map((s) => s.name).join(', ')}
                     </span>
                     . Concurrency and async I/O execute across {analysis.stats.indexedFiles} indexed source files with strict type contracts.
@@ -761,19 +763,19 @@ export const WorkspacePage: React.FC = () => {
                       {analysis.architecture.layers.map((layer) => (
                         <div key={layer.name} className="p-4 rounded-lg bg-surface-subtle border border-surface-border space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-xs text-slate-200">{layer.name}</span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-900/30 text-purple-300 border border-purple-500/30 uppercase">
+                            <span className="font-bold text-xs text-[#111827] dark:text-white">{layer.name}</span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200 border border-purple-400 font-bold uppercase">
                               {layer.type}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-400">{layer.description}</p>
+                          <p className="text-xs text-[#1F2937] dark:text-slate-300">{layer.description}</p>
                           {layer.files.length > 0 && (
                             <div className="pt-1 flex flex-wrap gap-1.5">
                               {layer.files.slice(0, 4).map((f) => (
                                 <button
                                   key={f}
                                   onClick={() => handleNavigateToFile(f)}
-                                  className="text-[10px] font-mono text-primary-400 hover:underline bg-surface border border-surface-border px-1.5 py-0.5 rounded"
+                                  className="text-[10px] font-mono text-primary-700 dark:text-primary-300 font-semibold hover:underline bg-surface border border-surface-border px-1.5 py-0.5 rounded"
                                 >
                                   {f}
                                 </button>
@@ -791,12 +793,12 @@ export const WorkspacePage: React.FC = () => {
               <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FolderTree className="w-4 h-4 text-primary-400" />
-                    <h3 className="font-bold text-sm text-slate-100">
+                    <FolderTree className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    <h3 className="font-bold text-sm text-[#111827] dark:text-white">
                       Architecture Flowchart & Component Wiring
                     </h3>
                   </div>
-                  <span className="text-[11px] text-slate-500">Interactive SVG diagram</span>
+                  <span className="text-[11px] text-[#374151] dark:text-slate-300 font-semibold">Interactive SVG diagram</span>
                 </div>
 
                 <div className="min-h-[420px] bg-surface-subtle/40 rounded-lg p-2 border border-surface-border">
@@ -804,10 +806,10 @@ export const WorkspacePage: React.FC = () => {
                 </div>
 
                 {/* Executive Takeaway Under Diagram */}
-                <div className="p-4 rounded-lg bg-primary-950/20 border border-primary-500/20 text-xs text-slate-300 flex items-start space-x-2.5">
+                <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-950/20 border border-primary-500/30 text-xs text-[#1F2937] dark:text-slate-200 flex items-start space-x-2.5">
                   <span className="text-base">💡</span>
                   <div>
-                    <strong className="text-primary-300">Architecture at a Glance:</strong> Just by reading this diagram, others can understand that <strong>{analysis.overview.projectName}</strong> organizes its logic using a <em>{analysis.architecture.pattern}</em> architecture to execute <em>{analysis.overview.problemSolved}</em>.
+                    <strong className="text-[#111827] dark:text-primary-300 font-bold">Architecture at a Glance:</strong> Just by reading this diagram, others can understand that <strong className="text-[#111827] dark:text-white font-bold">{analysis.overview.projectName}</strong> organizes its logic using a <em className="text-[#1F2937] dark:text-slate-200 font-semibold">{analysis.architecture.pattern}</em> architecture to execute <em className="text-[#1F2937] dark:text-slate-200 font-semibold">{analysis.overview.problemSolved}</em>.
                   </div>
                 </div>
               </div>
