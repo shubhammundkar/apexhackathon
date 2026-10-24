@@ -13,6 +13,7 @@ import { shouldIncludeFile, detectLanguage, redactSecrets } from './fileFilterSe
 import { ParserService, ParsedProjectManifest } from './parserService.js';
 import { IndexingService } from './indexingService.js';
 import { GeminiService } from './geminiService.js';
+import { rankFilesForIngestion } from './filePriorityService.js';
 import { config } from '../config.js';
 import {
   RepositoryStore,
@@ -318,10 +319,23 @@ export class RepositoryManager {
       throw new Error('No supported source code files were found in this repository.');
     }
 
-    // Limit files to avoid memory exhaustion
-    const filesToFetch = includedNodes.slice(0, config.MAX_REPO_FILES);
-    if (includedNodes.length > config.MAX_REPO_FILES) {
-      warnings.push(`Repository has ${includedNodes.length} source files; indexed top ${config.MAX_REPO_FILES} critical files.`);
+    // Rank files deterministically by priority before slicing to MAX_REPO_FILES
+    const rankedNodes = rankFilesForIngestion(includedNodes);
+    const filesToFetch = rankedNodes.slice(0, config.MAX_REPO_FILES);
+    let skippedByGroup: Record<string, number> | undefined;
+
+    if (rankedNodes.length > config.MAX_REPO_FILES) {
+      const skippedNodes = rankedNodes.slice(config.MAX_REPO_FILES);
+      skippedByGroup = {};
+      for (const sn of skippedNodes) {
+        skippedByGroup[sn.group] = (skippedByGroup[sn.group] || 0) + 1;
+      }
+      const skippedDescriptions = Object.entries(skippedByGroup)
+        .map(([group, count]) => `${count} ${group.replace('_', '/')}`)
+        .join(', ');
+      warnings.push(
+        `Indexed ${filesToFetch.length} of ${includedNodes.length} eligible files. Skipped: ${skippedDescriptions}.`
+      );
     }
 
     // Step 5: Download Files with Bounded Concurrency
@@ -371,6 +385,12 @@ export class RepositoryManager {
         })
       );
     }
+
+    // Sort downloadedFiles deterministically by the ingestion priority order
+    const priorityIndexMap = new Map(rankedNodes.map((n, idx) => [n.path, idx]));
+    downloadedFiles.sort(
+      (a, b) => (priorityIndexMap.get(a.path) ?? 999999) - (priorityIndexMap.get(b.path) ?? 999999)
+    );
 
     // Step 6: Indexing and Code Search Engine
     await this.updateJobProgress(job, 'indexing', `Building BM25 code index and parsing project manifest...`, 85);
@@ -428,15 +448,17 @@ export class RepositoryManager {
             indexedFiles: downloadedFiles.length,
             totalLines: downloadedFiles.reduce((acc, f) => acc + f.lineCount, 0),
             languages: this.calculateLanguageStats(downloadedFiles),
+            eligibleFiles: includedNodes.length,
+            skippedByGroup,
           },
         };
       } catch (err: any) {
         warnings.push(`Gemini AI analysis notice: ${err.message}. Showing rule-based parsed architecture.`);
-        fullAnalysis = this.createFallbackAnalysis(metadata, manifest, downloadedFiles, fileAnalysisMap, treeResponse.tree.length);
+        fullAnalysis = this.createFallbackAnalysis(metadata, manifest, downloadedFiles, fileAnalysisMap, treeResponse.tree.length, includedNodes.length, skippedByGroup);
       }
     } else {
       warnings.push('GEMINI_API_KEY is not configured on the server. Analysis generated from AST and static parser without AI augmentation.');
-      fullAnalysis = this.createFallbackAnalysis(metadata, manifest, downloadedFiles, fileAnalysisMap, treeResponse.tree.length);
+      fullAnalysis = this.createFallbackAnalysis(metadata, manifest, downloadedFiles, fileAnalysisMap, treeResponse.tree.length, includedNodes.length, skippedByGroup);
     }
 
     // Save Repository State to Store
@@ -564,7 +586,9 @@ export class RepositoryManager {
     manifest: ParsedProjectManifest,
     files: SourceFile[],
     fileAnalysisMap: Map<string, FileAnalysis>,
-    totalFiles: number
+    totalFiles: number,
+    eligibleFiles?: number,
+    skippedByGroup?: Record<string, number>
   ): FullRepositoryAnalysis {
     return {
       repositoryId: metadata.fullName.toLowerCase(),
@@ -627,6 +651,8 @@ export class RepositoryManager {
         indexedFiles: files.length,
         totalLines: files.reduce((acc, f) => acc + f.lineCount, 0),
         languages: this.calculateLanguageStats(files),
+        eligibleFiles,
+        skippedByGroup,
       },
     };
   }

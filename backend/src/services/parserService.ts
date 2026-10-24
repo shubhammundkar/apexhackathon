@@ -1,4 +1,19 @@
 import { TechStackItem, SourceFile, FileAnalysis } from '@codebase-explainer/shared';
+import { config } from '../config.js';
+
+export function filterKeyFunctionsForPrompt(
+  keyFunctions: { name: string; line: number; description: string }[],
+  exports: string[] = [],
+  maxFunctions: number = config.AI_MAX_FUNCTIONS_PER_FILE ?? 20
+): { name: string; line: number; description: string }[] {
+  const exportSet = new Set(exports);
+  const sorted = [...keyFunctions].sort((a, b) => {
+    const aExp = exportSet.has(a.name) ? 1 : 0;
+    const bExp = exportSet.has(b.name) ? 1 : 0;
+    return bExp - aExp;
+  });
+  return sorted.slice(0, maxFunctions);
+}
 
 export interface ParsedProjectManifest {
   stack: TechStackItem[];
@@ -220,10 +235,12 @@ export class ParserService {
         }
       }
 
-      // Functions (cap at top 15 key functions per file to prevent unbounded bloat)
-      if (keyFunctions.length < 15) {
+      // Functions (cap at configurable MAX_KEY_FUNCTIONS_PER_FILE, default 40)
+      const maxFns = config.MAX_KEY_FUNCTIONS_PER_FILE ?? 40;
+      if (keyFunctions.length < maxFns) {
         let fnMatch;
         while ((fnMatch = functionRegex.exec(lineText)) !== null) {
+          if (keyFunctions.length >= maxFns) break;
           const fnName = fnMatch[1] || fnMatch[2] || fnMatch[3] || fnMatch[4] || fnMatch[5];
           if (fnName && !['if', 'for', 'while', 'switch', 'catch'].includes(fnName)) {
             keyFunctions.push({

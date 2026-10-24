@@ -262,6 +262,17 @@ async function main() {
     fs.writeFileSync(baselinePath, JSON.stringify(results['line'], null, 2), 'utf8');
     console.log(`\n[Chunking Benchmark] Successfully saved line baseline to ${baselinePath}`);
   }
+
+  // If running syntax mode, save docs/K_BASELINE.json
+  if (results['syntax']) {
+    const docsDir = path.join(rootDir, 'docs');
+    if (!fs.existsSync(docsDir)) {
+      fs.mkdirSync(docsDir, { recursive: true });
+    }
+    const kBaselinePath = path.join(docsDir, 'K_BASELINE.json');
+    fs.writeFileSync(kBaselinePath, JSON.stringify(results['syntax'], null, 2), 'utf8');
+    console.log(`\n[Chunking Benchmark] Successfully saved syntax baseline to ${kBaselinePath}`);
+  }
 }
 
 main().catch((err) => {

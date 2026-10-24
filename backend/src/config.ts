@@ -29,7 +29,39 @@ const EnvSchema = z.object({
   MAX_STORED_REPOS: z.coerce.number().default(20),
   DB_PATH: z.string().optional(),
   MONGODB_URI: z.string().optional().default(''),
-});
+
+  // Adaptive Q&A Retrieval
+  RETRIEVAL_POOL: z.coerce.number().positive().default(40),
+  EVIDENCE_TOKEN_BUDGET: z.coerce.number().positive().default(6000),
+  NARROW_MIN_HITS: z.coerce.number().positive().default(2),
+  NARROW_MAX_HITS: z.coerce.number().positive().default(5),
+  NARROW_CUTOFF: z.coerce.number().min(0).max(1).default(0.6),
+  NORMAL_MIN_HITS: z.coerce.number().positive().default(3),
+  NORMAL_MAX_HITS: z.coerce.number().positive().default(8),
+  NORMAL_CUTOFF: z.coerce.number().min(0).max(1).default(0.5),
+  BROAD_MIN_HITS: z.coerce.number().positive().default(4),
+  BROAD_MAX_HITS: z.coerce.number().positive().default(12),
+  BROAD_CUTOFF: z.coerce.number().min(0).max(1).default(0.35),
+  MAX_CHUNKS_PER_FILE: z.coerce.number().positive().default(3),
+  MAX_CHUNKS_PER_FILE_BROAD: z.coerce.number().positive().default(4),
+
+  // Architecture Context Selection
+  ARCH_CONTEXT_MAX_FILES: z.coerce.number().positive().default(25),
+  ARCH_CONTEXT_CHAR_BUDGET: z.coerce.number().positive().default(60000),
+
+  // Key Functions Limits
+  MAX_KEY_FUNCTIONS_PER_FILE: z.coerce.number().positive().default(40),
+  AI_MAX_FUNCTIONS_PER_FILE: z.coerce.number().positive().default(20),
+}).refine(
+  (data) => data.NARROW_MIN_HITS <= data.NARROW_MAX_HITS,
+  { message: 'NARROW_MIN_HITS must be <= NARROW_MAX_HITS', path: ['NARROW_MIN_HITS'] }
+).refine(
+  (data) => data.NORMAL_MIN_HITS <= data.NORMAL_MAX_HITS,
+  { message: 'NORMAL_MIN_HITS must be <= NORMAL_MAX_HITS', path: ['NORMAL_MIN_HITS'] }
+).refine(
+  (data) => data.BROAD_MIN_HITS <= data.BROAD_MAX_HITS,
+  { message: 'BROAD_MIN_HITS must be <= BROAD_MAX_HITS', path: ['BROAD_MIN_HITS'] }
+);
 
 export const CHUNKER_VERSION = '2.0.0';
 

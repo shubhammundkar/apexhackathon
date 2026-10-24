@@ -158,5 +158,108 @@
     "expectedSymbol": "pruneOldRepositories",
     "reviewed": false,
     "note": "pruneOldRepositories deletes least-recently-used repos"
+  },
+  {
+    "id": 21,
+    "question": "what does the chunkFile function do in chunkingService.ts?",
+    "expectedFile": "backend/src/services/chunkingService.ts",
+    "expectedSymbol": "chunkFile",
+    "reviewed": false,
+    "note": "chunkFile produces syntax chunks or line window chunks for source files"
+  },
+  {
+    "id": 22,
+    "question": "how does shouldIncludeFile check whether a file should be ingested?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "shouldIncludeFile",
+    "reviewed": false,
+    "note": "shouldIncludeFile checks binary extensions, excluded directories, and file size"
+  },
+  {
+    "id": 23,
+    "question": "where does extractSymbols parse AST functions and classes in symbolService.ts?",
+    "expectedFile": "backend/src/services/symbolService.ts",
+    "expectedSymbol": "extractSymbols",
+    "reviewed": false,
+    "note": "extractSymbols parses tree-sitter or regex symbols per source file"
+  },
+  {
+    "id": 24,
+    "question": "how does answerQuestionStream stream SSE events in geminiService.ts?",
+    "expectedFile": "backend/src/services/geminiService.ts",
+    "expectedSymbol": "answerQuestionStream",
+    "reviewed": false,
+    "note": "answerQuestionStream calls Gemini SDK generateContentStream and passes tokens to onChunk"
+  },
+  {
+    "id": 25,
+    "question": "how are user sessions extracted in authService.ts?",
+    "expectedFile": "backend/src/services/authService.ts",
+    "expectedSymbol": "getUserAndSession",
+    "reviewed": false,
+    "note": "getUserAndSession extracts session id or user token from request headers"
+  },
+  {
+    "id": 26,
+    "question": "how does a repository get analyzed end to end from GitHub URL to architecture overview?",
+    "expectedFiles": [
+      "backend/src/routes/api.ts",
+      "backend/src/services/repositoryManager.ts",
+      "backend/src/services/geminiService.ts"
+    ],
+    "expectedFile": "backend/src/services/repositoryManager.ts",
+    "expectedSymbol": "startAnalysis",
+    "reviewed": false,
+    "note": "Flow starts at /repositories/analyze endpoint in api.ts, runs startAnalysis in repositoryManager, and calls geminiService for architecture"
+  },
+  {
+    "id": 27,
+    "question": "how does user authentication and session management flow work across the API and store?",
+    "expectedFiles": [
+      "backend/src/routes/api.ts",
+      "backend/src/services/authService.ts",
+      "backend/src/store/memoryStore.ts"
+    ],
+    "expectedFile": "backend/src/services/authService.ts",
+    "expectedSymbol": "getUserAndSession",
+    "reviewed": false,
+    "note": "Auth endpoints in api.ts authenticate users via authService and retrieve/store user records in repositoryStore"
+  },
+  {
+    "id": 28,
+    "question": "how does citation-grounded question answering retrieve code chunks and stream the Gemini answer?",
+    "expectedFiles": [
+      "backend/src/routes/api.ts",
+      "backend/src/services/indexingService.ts",
+      "backend/src/services/geminiService.ts"
+    ],
+    "expectedFile": "backend/src/services/indexingService.ts",
+    "expectedSymbol": "searchWithStats",
+    "reviewed": false,
+    "note": "Flow: POST /questions/stream in api.ts calls indexer.searchWithStats then geminiService.answerQuestionStream"
+  },
+  {
+    "id": 29,
+    "question": "how does file filtering and secret redaction work during ingestion?",
+    "expectedFiles": [
+      "backend/src/services/fileFilterService.ts",
+      "backend/src/services/repositoryManager.ts"
+    ],
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "redactSecrets",
+    "reviewed": false,
+    "note": "repositoryManager calls shouldIncludeFile then downloads files and calls redactSecrets"
+  },
+  {
+    "id": 30,
+    "question": "how does the frontend QA panel connect to backend streaming API and navigate citations?",
+    "expectedFiles": [
+      "frontend/src/components/QAPanel.tsx",
+      "frontend/src/api/client.ts"
+    ],
+    "expectedFile": "frontend/src/components/QAPanel.tsx",
+    "expectedSymbol": "handleSend",
+    "reviewed": false,
+    "note": "QAPanel handleSend invokes client.ts askQuestionStream to receive chunks and citations"
   }
 ]

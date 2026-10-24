@@ -481,8 +481,8 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
       });
     }
 
-    // Retrieve citations from indexing engine
-    const citations = repo.indexer.search(question, 6, filePath);
+    // Retrieve citations from indexing engine with adaptive limits
+    const { citations, stats } = repo.indexer.searchWithStats(question, undefined, filePath);
 
     // Call Gemini with grounded context
     const geminiService = repositoryManager.getGeminiService();
@@ -494,6 +494,7 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
       apiKey,
       model
     );
+    qaResponse.retrieval = stats;
 
     // Save Q&A to store (MongoDB Atlas / SQLite / Memory)
     const { userId, sessionId } = getUserAndSession(req);
@@ -578,7 +579,7 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
     return;
   }
 
-  const citations = repo.indexer.search(question, 6, filePath);
+  const { citations, stats } = repo.indexer.searchWithStats(question, undefined, filePath);
 
   // Set SSE Headers
   res.writeHead(200, {
@@ -603,6 +604,7 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
       apiKey,
       model
     );
+    finalAnswer.retrieval = stats;
 
     // Save Q&A to store (MongoDB Atlas / SQLite / Memory)
     const { userId, sessionId } = getUserAndSession(req);

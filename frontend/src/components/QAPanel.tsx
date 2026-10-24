@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SearchCitation, QAResponse } from '@codebase-explainer/shared';
+import { SearchCitation, QAResponse, RetrievalStats } from '@codebase-explainer/shared';
 import { apiClient } from '../api/client';
 import {
   Send,
@@ -37,6 +37,7 @@ interface MessageItem {
   content: string;
   citations?: SearchCitation[];
   timestamp: string;
+  retrieval?: RetrievalStats;
 }
 
 type ExplanationTier = 'all' | 'beginner' | 'lowLevel' | 'deepTechnical';
@@ -177,7 +178,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
       setMessages((prev) =>
         prev.map((m) =>
           m.id === aiMsgId
-            ? { ...m, content: res.answer || m.content, citations: res.citations || m.citations }
+            ? { ...m, content: res.answer || m.content, citations: res.citations || m.citations, retrieval: res.retrieval }
             : m
         )
       );
@@ -408,6 +409,12 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {msg.retrieval && (
+                    <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      Used {msg.retrieval.hitsUsed} of {msg.retrieval.totalMatches} matches · ~{msg.retrieval.tokensUsed.toLocaleString()} tokens
                     </div>
                   )}
                 </div>

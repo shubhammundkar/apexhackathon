@@ -10,6 +10,7 @@ import {
   SourceFile,
 } from '@codebase-explainer/shared';
 import { ParsedProjectManifest } from './parserService.js';
+import { selectArchitectureContext } from './contextSelectionService.js';
 
 export interface AnalysisGenerationResult {
   overview: RepositoryOverview;
@@ -90,10 +91,11 @@ export class GeminiService {
       (m, idx, arr) => arr.indexOf(m) === idx
     );
 
-    // Prepare code context sample (top files like package.json, entrypoints, README)
-    const contextFiles = files.slice(0, 15).map((f) => {
-      const truncatedContent = f.content.length > 4000 ? f.content.slice(0, 4000) + '\n... [truncated]' : f.content;
-      return `--- FILE: ${f.path} (${f.language}) ---\n${truncatedContent}\n`;
+    // Select high-importance files and structure using contextSelectionService
+    const { selectedFiles, pathsListFormatted } = selectArchitectureContext(files, manifest);
+
+    const contextFiles = selectedFiles.map((f) => {
+      return `--- FILE: ${f.path} (${f.language}) ---\n${f.content}\n`;
     }).join('\n');
 
     const prompt = `
@@ -111,7 +113,10 @@ REPOSITORY METADATA:
 - Package Manager: ${manifest.packageManager || 'None'}
 - Scripts: ${JSON.stringify(manifest.scripts)}
 
-SOURCE CODE EXTRACTS:
+REPOSITORY STRUCTURE (ALL INDEXED FILES):
+${pathsListFormatted}
+
+SOURCE CODE EXTRACTS (${selectedFiles.length} key files):
 ${contextFiles}
 
 Respond ONLY with a valid JSON object matching this exact schema:

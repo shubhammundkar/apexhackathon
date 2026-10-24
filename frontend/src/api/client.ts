@@ -164,6 +164,7 @@ export const apiClient = {
     let fullAnswer = '';
     let citations: any[] = [];
     let modelUsed = 'gemini-3.5-flash';
+    let retrieval: any = undefined;
     let buffer = '';
 
     while (true) {
@@ -192,6 +193,7 @@ export const apiClient = {
             callbacks.onChunk?.(data.text);
           } else if (event === 'done' && data) {
             modelUsed = data.modelUsed || modelUsed;
+            retrieval = data.retrieval;
           } else if (event === 'error' && data) {
             throw new Error(data.message || 'Stream error');
           }
@@ -207,6 +209,7 @@ export const apiClient = {
       citations,
       modelUsed,
       answeredAt: new Date().toISOString(),
+      retrieval,
     };
   },
 

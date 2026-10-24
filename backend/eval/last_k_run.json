@@ -1,0 +1,216 @@
+[
+  {
+    "name": "Fixed-K=3",
+    "k": 3,
+    "isAdaptive": false,
+    "totalQuestions": 30,
+    "fileHitOrRecall": 61.1,
+    "symbolHit": 40,
+    "wholeSymbolRate": 40,
+    "avgBlocks": 2.8,
+    "avgChars": 8413,
+    "avgLines": 209,
+    "avgTokens": 2103,
+    "avgLatencyMs": 1.27,
+    "byKind": {
+      "NARROW": {
+        "count": 6,
+        "fileHitOrRecall": 100,
+        "symbolHit": 66.7,
+        "wholeSymbolRate": 66.7,
+        "avgBlocks": 2.3,
+        "avgTokens": 2028,
+        "avgLatencyMs": 0.86
+      },
+      "NORMAL": {
+        "count": 17,
+        "fileHitOrRecall": 58.8,
+        "symbolHit": 41.2,
+        "wholeSymbolRate": 41.2,
+        "avgBlocks": 2.9,
+        "avgTokens": 1958,
+        "avgLatencyMs": 1.23
+      },
+      "BROAD": {
+        "count": 7,
+        "fileHitOrRecall": 33.3,
+        "symbolHit": 14.3,
+        "wholeSymbolRate": 14.3,
+        "avgBlocks": 2.9,
+        "avgTokens": 2521,
+        "avgLatencyMs": 1.71
+      }
+    }
+  },
+  {
+    "name": "Fixed-K=5",
+    "k": 5,
+    "isAdaptive": false,
+    "totalQuestions": 30,
+    "fileHitOrRecall": 66.7,
+    "symbolHit": 46.7,
+    "wholeSymbolRate": 46.7,
+    "avgBlocks": 4.5,
+    "avgChars": 12824,
+    "avgLines": 316,
+    "avgTokens": 3206,
+    "avgLatencyMs": 1.06,
+    "byKind": {
+      "NARROW": {
+        "count": 6,
+        "fileHitOrRecall": 100,
+        "symbolHit": 83.3,
+        "wholeSymbolRate": 83.3,
+        "avgBlocks": 4,
+        "avgTokens": 2369,
+        "avgLatencyMs": 1.12
+      },
+      "NORMAL": {
+        "count": 17,
+        "fileHitOrRecall": 64.7,
+        "symbolHit": 47.1,
+        "wholeSymbolRate": 47.1,
+        "avgBlocks": 4.7,
+        "avgTokens": 3256,
+        "avgLatencyMs": 0.99
+      },
+      "BROAD": {
+        "count": 7,
+        "fileHitOrRecall": 42.9,
+        "symbolHit": 14.3,
+        "wholeSymbolRate": 14.3,
+        "avgBlocks": 4.3,
+        "avgTokens": 3804,
+        "avgLatencyMs": 1.18
+      }
+    }
+  },
+  {
+    "name": "Fixed-K=8",
+    "k": 8,
+    "isAdaptive": false,
+    "totalQuestions": 30,
+    "fileHitOrRecall": 72.2,
+    "symbolHit": 53.3,
+    "wholeSymbolRate": 53.3,
+    "avgBlocks": 6.8,
+    "avgChars": 17251,
+    "avgLines": 508,
+    "avgTokens": 4313,
+    "avgLatencyMs": 1.08,
+    "byKind": {
+      "NARROW": {
+        "count": 6,
+        "fileHitOrRecall": 100,
+        "symbolHit": 83.3,
+        "wholeSymbolRate": 83.3,
+        "avgBlocks": 6.3,
+        "avgTokens": 3470,
+        "avgLatencyMs": 0.83
+      },
+      "NORMAL": {
+        "count": 17,
+        "fileHitOrRecall": 70.6,
+        "symbolHit": 58.8,
+        "wholeSymbolRate": 58.8,
+        "avgBlocks": 7.2,
+        "avgTokens": 4565,
+        "avgLatencyMs": 1
+      },
+      "BROAD": {
+        "count": 7,
+        "fileHitOrRecall": 52.4,
+        "symbolHit": 14.3,
+        "wholeSymbolRate": 14.3,
+        "avgBlocks": 6.1,
+        "avgTokens": 4424,
+        "avgLatencyMs": 1.48
+      }
+    }
+  },
+  {
+    "name": "Fixed-K=12",
+    "k": 12,
+    "isAdaptive": false,
+    "totalQuestions": 30,
+    "fileHitOrRecall": 78.9,
+    "symbolHit": 56.7,
+    "wholeSymbolRate": 56.7,
+    "avgBlocks": 9.5,
+    "avgChars": 20362,
+    "avgLines": 763,
+    "avgTokens": 5091,
+    "avgLatencyMs": 0.98,
+    "byKind": {
+      "NARROW": {
+        "count": 6,
+        "fileHitOrRecall": 100,
+        "symbolHit": 83.3,
+        "wholeSymbolRate": 83.3,
+        "avgBlocks": 9.2,
+        "avgTokens": 4860,
+        "avgLatencyMs": 0.71
+      },
+      "NORMAL": {
+        "count": 17,
+        "fileHitOrRecall": 70.6,
+        "symbolHit": 58.8,
+        "wholeSymbolRate": 58.8,
+        "avgBlocks": 9.9,
+        "avgTokens": 5221,
+        "avgLatencyMs": 1
+      },
+      "BROAD": {
+        "count": 7,
+        "fileHitOrRecall": 81,
+        "symbolHit": 28.6,
+        "wholeSymbolRate": 28.6,
+        "avgBlocks": 8.7,
+        "avgTokens": 4971,
+        "avgLatencyMs": 1.18
+      }
+    }
+  },
+  {
+    "name": "Adaptive",
+    "isAdaptive": true,
+    "totalQuestions": 30,
+    "fileHitOrRecall": 75,
+    "symbolHit": 53.3,
+    "wholeSymbolRate": 53.3,
+    "avgBlocks": 5.9,
+    "avgChars": 14630,
+    "avgLines": 528,
+    "avgTokens": 3658,
+    "avgLatencyMs": 1.09,
+    "byKind": {
+      "NARROW": {
+        "count": 6,
+        "fileHitOrRecall": 83.3,
+        "symbolHit": 66.7,
+        "wholeSymbolRate": 66.7,
+        "avgBlocks": 3,
+        "avgTokens": 1713,
+        "avgLatencyMs": 0.81
+      },
+      "NORMAL": {
+        "count": 17,
+        "fileHitOrRecall": 70.6,
+        "symbolHit": 58.8,
+        "wholeSymbolRate": 58.8,
+        "avgBlocks": 6.1,
+        "avgTokens": 3898,
+        "avgLatencyMs": 1.12
+      },
+      "BROAD": {
+        "count": 7,
+        "fileHitOrRecall": 78.6,
+        "symbolHit": 28.6,
+        "wholeSymbolRate": 28.6,
+        "avgBlocks": 8.1,
+        "avgTokens": 4741,
+        "avgLatencyMs": 1.26
+      }
+    }
+  }
+]

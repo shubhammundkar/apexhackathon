@@ -276,7 +276,24 @@ export interface FullRepositoryAnalysis {
     indexedFiles: number;
     totalLines: number;
     languages: Record<string, number>;
+    eligibleFiles?: number;
+    skippedByGroup?: Record<string, number>;
   };
+}
+
+export type QuestionKind = 'NARROW' | 'NORMAL' | 'BROAD';
+
+export interface RetrievalStats {
+  questionKind: QuestionKind;
+  poolSize: number;
+  candidatesConsidered: number;
+  hitsUsed: number;
+  blocksReturned: number;
+  droppedByCutoff: number;
+  droppedByFileCap: number;
+  droppedByBudget: number;
+  tokensUsed: number;
+  totalMatches: number;
 }
 
 export interface QAResponse {
@@ -286,6 +303,7 @@ export interface QAResponse {
   modelUsed: string;
   answeredAt: string;
   isRelevant?: boolean;
+  retrieval?: RetrievalStats;
 }
 
 export interface JobStatusResponse {

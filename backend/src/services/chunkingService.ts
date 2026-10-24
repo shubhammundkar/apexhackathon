@@ -90,7 +90,8 @@ export function chunkByLineWindow(
     });
 
     if (end === totalLines) break;
-    start += chunkSizeLines - chunkOverlapLines;
+    const step = Math.max(1, chunkSizeLines - chunkOverlapLines);
+    start += step;
   }
 
   return chunks;
