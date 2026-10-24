@@ -7,6 +7,7 @@ import {
   LoginRequestSchema,
 } from '@codebase-explainer/shared';
 import { repositoryManager } from '../services/repositoryManager.js';
+import { queryRelevanceService, REJECTION_MESSAGE } from '../services/queryRelevanceService.js';
 import { getConfigSummary } from '../config.js';
 import {
   hashPassword,
@@ -460,6 +461,26 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
 
     const { question, filePath, apiKey, model } = parseResult.data;
 
+    // Relevance Gate: Reject irrelevant queries immediately before chunk retrieval or Gemini calls
+    const allFilePaths = repo.files ? repo.files.map((f: any) => f.path) : [];
+    const relevance = queryRelevanceService.classify({
+      question,
+      filePath,
+      repoMetadata: repo.metadata,
+      allFilePaths,
+    });
+
+    if (!relevance.isRelevant) {
+      return res.json({
+        question,
+        answer: REJECTION_MESSAGE,
+        citations: [],
+        modelUsed: 'relevance-gate',
+        answeredAt: new Date().toISOString(),
+        isRelevant: false,
+      });
+    }
+
     // Retrieve citations from indexing engine
     const citations = repo.indexer.search(question, 6, filePath);
 
@@ -528,6 +549,35 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
   }
 
   const { question, filePath, apiKey, model } = parseResult.data;
+
+  // Relevance Gate: Reject irrelevant queries immediately before chunk retrieval or Gemini calls
+  const allFilePaths = repo.files ? repo.files.map((f: any) => f.path) : [];
+  const relevance = queryRelevanceService.classify({
+    question,
+    filePath,
+    repoMetadata: repo.metadata,
+    allFilePaths,
+  });
+
+  if (!relevance.isRelevant) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write(`event: citations\ndata: []\n\n`);
+    res.write(`event: chunk\ndata: ${JSON.stringify({ text: REJECTION_MESSAGE })}\n\n`);
+    res.write(
+      `event: done\ndata: ${JSON.stringify({
+        isRelevant: false,
+        modelUsed: 'relevance-gate',
+        answeredAt: new Date().toISOString(),
+      })}\n\n`
+    );
+    res.end();
+    return;
+  }
+
   const citations = repo.indexer.search(question, 6, filePath);
 
   // Set SSE Headers

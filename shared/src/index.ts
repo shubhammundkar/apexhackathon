@@ -251,6 +251,7 @@ export interface QAResponse {
   citations: SearchCitation[];
   modelUsed: string;
   answeredAt: string;
+  isRelevant?: boolean;
 }
 
 export interface JobStatusResponse {
