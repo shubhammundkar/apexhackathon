@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   RepositoryMetadata,
   SourceFile,
@@ -13,9 +14,15 @@ import { ParserService, ParsedProjectManifest } from './parserService.js';
 import { IndexingService } from './indexingService.js';
 import { GeminiService } from './geminiService.js';
 import { config } from '../config.js';
+import {
+  RepositoryStore,
+  StoredFileRecord,
+  createRepositoryStore,
+} from '../store/index.js';
 
 export interface RepositoryState {
   id: string; // e.g. "owner/repo"
+  commitSha: string;
   metadata: RepositoryMetadata;
   files: SourceFile[];
   fileTree: RepositoryFileNode[];
@@ -37,24 +44,56 @@ export interface IngestionJob {
 }
 
 export class RepositoryManager {
-  private repositories: Map<string, RepositoryState> = new Map();
-  private jobs: Map<string, IngestionJob> = new Map();
+  private activeRepositories: Map<string, RepositoryState> = new Map();
+  private activeJobs: Map<string, IngestionJob> = new Map();
   private githubService: GitHubService;
   private parserService: ParserService;
   private geminiService: GeminiService;
+  private store: RepositoryStore;
 
-  constructor() {
+  constructor(store?: RepositoryStore) {
     this.githubService = new GitHubService(config.GITHUB_TOKEN);
     this.parserService = new ParserService();
     this.geminiService = new GeminiService(config.GEMINI_API_KEY, config.GEMINI_MODEL);
+    this.store = store || createRepositoryStore();
   }
 
-  public getJob(jobId: string): IngestionJob | undefined {
-    return this.jobs.get(jobId);
+  public getStore(): RepositoryStore {
+    return this.store;
   }
 
-  public cancelJob(jobId: string): boolean {
-    const job = this.jobs.get(jobId);
+  public setStore(store: RepositoryStore): void {
+    this.store = store;
+    this.activeRepositories.clear();
+    this.activeJobs.clear();
+  }
+
+  public clearMemoryCache(): void {
+    this.activeRepositories.clear();
+    this.activeJobs.clear();
+  }
+
+  public async getJob(jobId: string): Promise<IngestionJob | undefined> {
+    const active = this.activeJobs.get(jobId);
+    if (active) return active;
+
+    const stored = await this.store.getJob(jobId);
+    if (!stored) return undefined;
+
+    return {
+      jobId: stored.jobId,
+      repositoryId: stored.repoId,
+      url: stored.url,
+      status: stored.status,
+      progress: stored.progress,
+      abortController: new AbortController(),
+      createdAt: stored.createdAt,
+      updatedAt: stored.updatedAt,
+    };
+  }
+
+  public async cancelJob(jobId: string): Promise<boolean> {
+    const job = await this.getJob(jobId);
     if (!job) return false;
 
     job.abortController.abort();
@@ -66,18 +105,75 @@ export class RepositoryManager {
       error: 'Cancelled by user',
     };
     job.updatedAt = new Date().toISOString();
+
+    await this.store.updateJob(jobId, {
+      status: job.status,
+      progress: job.progress,
+      updatedAt: job.updatedAt,
+    });
+
     return true;
   }
 
-  public getRepository(repoId: string): RepositoryState | undefined {
-    return this.repositories.get(repoId.toLowerCase());
+  public async getRepository(repoId: string, commitSha?: string): Promise<RepositoryState | undefined> {
+    const normalized = repoId.toLowerCase();
+    const active = this.activeRepositories.get(normalized);
+    if (active && (!commitSha || active.commitSha === commitSha)) {
+      await this.store.touchRepository(active.id, active.commitSha);
+      return active;
+    }
+
+    const stored = await this.store.getRepository(normalized, commitSha);
+    if (!stored) {
+      return undefined;
+    }
+
+    const storedFiles = await this.store.getFiles(stored.repoId, stored.commitSha);
+    const sourceFiles: SourceFile[] = storedFiles.map((f) => ({
+      path: f.path,
+      content: f.content,
+      size: f.size,
+      language: f.language,
+      lineCount: f.lineCount,
+    }));
+
+    const fileAnalysisMap = new Map<string, FileAnalysis>(
+      Object.entries(stored.fileAnalysisMap || {})
+    );
+
+    let cachedIndexer: IndexingService | null = null;
+
+    const repoState: RepositoryState = {
+      id: stored.repoId,
+      commitSha: stored.commitSha,
+      metadata: stored.metadata,
+      files: sourceFiles,
+      fileTree: stored.fileTree,
+      fileAnalysisMap,
+      analysis: stored.analysis,
+      ingestedAt: stored.ingestedAt,
+      get indexer() {
+        if (!cachedIndexer) {
+          cachedIndexer = new IndexingService(config.CHUNK_SIZE_LINES, config.CHUNK_OVERLAP_LINES);
+          cachedIndexer.indexFiles(sourceFiles);
+        }
+        return cachedIndexer;
+      },
+      set indexer(idx: IndexingService) {
+        cachedIndexer = idx;
+      },
+    };
+
+    this.activeRepositories.set(normalized, repoState);
+    return repoState;
   }
 
-  public listRepositories(): { id: string; name: string; stars: number; ingestedAt: string }[] {
-    return Array.from(this.repositories.values()).map((r) => ({
+  public async listRepositories(): Promise<{ id: string; name: string; stars: number; ingestedAt: string }[]> {
+    const list = await this.store.listRepositories();
+    return list.map((r) => ({
       id: r.id,
-      name: r.metadata.fullName,
-      stars: r.metadata.stars,
+      name: r.name,
+      stars: r.stars,
       ingestedAt: r.ingestedAt,
     }));
   }
@@ -111,10 +207,19 @@ export class RepositoryManager {
       updatedAt: new Date().toISOString(),
     };
 
-    this.jobs.set(jobId, job);
+    this.activeJobs.set(jobId, job);
+    await this.store.saveJob({
+      jobId: job.jobId,
+      repoId: job.repositoryId,
+      url: job.url,
+      status: job.status,
+      progress: job.progress,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+    });
 
     // Launch background execution
-    this.processIngestion(job, owner, repo, apiKey, branchOverride, modelOverride).catch((err) => {
+    this.processIngestion(job, owner, repo, apiKey, branchOverride, modelOverride).catch(async (err) => {
       console.error(`Error processing ingestion job ${jobId}:`, err);
       job.status = 'failed';
       job.progress = {
@@ -124,12 +229,17 @@ export class RepositoryManager {
         error: err.message,
       };
       job.updatedAt = new Date().toISOString();
+      await this.store.updateJob(jobId, {
+        status: job.status,
+        progress: job.progress,
+        updatedAt: job.updatedAt,
+      });
     });
 
     return { jobId, repositoryId: repoId };
   }
 
-  private updateJobProgress(
+  private async updateJobProgress(
     job: IngestionJob,
     stage: IngestionStage,
     message: string,
@@ -145,6 +255,12 @@ export class RepositoryManager {
       ...extra,
     };
     job.updatedAt = new Date().toISOString();
+
+    await this.store.updateJob(job.jobId, {
+      status: job.status,
+      progress: job.progress,
+      updatedAt: job.updatedAt,
+    });
   }
 
   private async processIngestion(
@@ -156,22 +272,37 @@ export class RepositoryManager {
     modelOverride?: string
   ) {
     const warnings: string[] = [];
+    const repoId = `${owner}/${repo}`.toLowerCase();
 
     // Step 1: Fetch Metadata
-    this.updateJobProgress(job, 'fetching_metadata', `Retrieving repository metadata for ${owner}/${repo}...`, 15);
+    await this.updateJobProgress(job, 'fetching_metadata', `Retrieving repository metadata for ${owner}/${repo}...`, 15);
     const metadata = await this.githubService.fetchMetadata(owner, repo);
     const branch = branchOverride || metadata.defaultBranch || 'main';
 
-    // Step 2: Fetch Tree
-    this.updateJobProgress(job, 'fetching_tree', `Retrieving repository tree for branch "${branch}"...`, 25);
+    // Step 2: Fetch Commit SHA & Check Store Cache
+    const commitSha = await this.githubService.fetchCommitSha(owner, repo, branch);
+    const cachedRepo = await this.store.getRepository(repoId, commitSha);
+    if (cachedRepo) {
+      await this.updateJobProgress(
+        job,
+        'completed',
+        `Repository ${owner}/${repo}@${commitSha} already analyzed. Reusing cached analysis.`,
+        100,
+        { warnings }
+      );
+      return;
+    }
+
+    // Step 3: Fetch Tree
+    await this.updateJobProgress(job, 'fetching_tree', `Retrieving repository tree for branch "${branch}"...`, 25);
     const treeResponse = await this.githubService.fetchTree(owner, repo, branch);
 
     if (treeResponse.truncated) {
       warnings.push('Repository tree exceeds GitHub API single-response limit. Some nested files may be omitted.');
     }
 
-    // Step 3: Filter Files
-    this.updateJobProgress(job, 'filtering', `Filtering and inspecting ${treeResponse.tree.length} tree nodes...`, 35);
+    // Step 4: Filter Files
+    await this.updateJobProgress(job, 'filtering', `Filtering and inspecting ${treeResponse.tree.length} tree nodes...`, 35);
     const candidateBlobs = treeResponse.tree.filter((node) => node.type === 'blob');
     const includedNodes: { path: string; size: number }[] = [];
 
@@ -193,8 +324,8 @@ export class RepositoryManager {
       warnings.push(`Repository has ${includedNodes.length} source files; indexed top ${config.MAX_REPO_FILES} critical files.`);
     }
 
-    // Step 4: Download Files with Bounded Concurrency
-    this.updateJobProgress(job, 'downloading_files', `Downloading source files (0/${filesToFetch.length})...`, 40, {
+    // Step 5: Download Files with Bounded Concurrency
+    await this.updateJobProgress(job, 'downloading_files', `Downloading source files (0/${filesToFetch.length})...`, 40, {
       totalFiles: filesToFetch.length,
       filesProcessed: 0,
       warnings,
@@ -230,7 +361,7 @@ export class RepositoryManager {
           } finally {
             completedCount++;
             const pct = Math.min(80, Math.round(40 + (completedCount / filesToFetch.length) * 40));
-            this.updateJobProgress(job, 'downloading_files', `Downloading files (${completedCount}/${filesToFetch.length})...`, pct, {
+            await this.updateJobProgress(job, 'downloading_files', `Downloading files (${completedCount}/${filesToFetch.length})...`, pct, {
               filesProcessed: completedCount,
               totalFiles: filesToFetch.length,
               currentFile: fileNode.path,
@@ -241,8 +372,8 @@ export class RepositoryManager {
       );
     }
 
-    // Step 5: Indexing and Code Search Engine
-    this.updateJobProgress(job, 'indexing', `Building BM25 code index and parsing project manifest...`, 85);
+    // Step 6: Indexing and Code Search Engine
+    await this.updateJobProgress(job, 'indexing', `Building BM25 code index and parsing project manifest...`, 85);
     const indexer = new IndexingService(config.CHUNK_SIZE_LINES, config.CHUNK_OVERLAP_LINES);
     indexer.indexFiles(downloadedFiles);
 
@@ -261,8 +392,8 @@ export class RepositoryManager {
     // Build directory tree enriched with responsibilities
     const fileTree = this.buildFileTree(downloadedFiles, fileAnalysisMap);
 
-    // Step 6: Gemini Analysis
-    this.updateJobProgress(job, 'analyzing', `Running structured Gemini architectural analysis...`, 90);
+    // Step 7: Gemini Analysis
+    await this.updateJobProgress(job, 'analyzing', `Running structured Gemini architectural analysis...`, 90);
 
     let fullAnalysis: FullRepositoryAnalysis;
     const canUseGemini = this.geminiService.isConfigured(userApiKey);
@@ -278,7 +409,7 @@ export class RepositoryManager {
         );
 
         fullAnalysis = {
-          repositoryId: `${owner}/${repo}`.toLowerCase(),
+          repositoryId: repoId,
           analyzedAt: new Date().toISOString(),
           modelUsed: aiResult.modelUsed,
           overview: aiResult.overview,
@@ -308,22 +439,57 @@ export class RepositoryManager {
       fullAnalysis = this.createFallbackAnalysis(metadata, manifest, downloadedFiles, fileAnalysisMap, treeResponse.tree.length);
     }
 
-    // Save Repository State
+    // Save Repository State to Store
+    const nowIso = new Date().toISOString();
+    const storedFiles: StoredFileRecord[] = downloadedFiles.map((f) => ({
+      repoId,
+      commitSha,
+      path: f.path,
+      language: f.language,
+      size: f.size,
+      lineCount: f.lineCount,
+      sha256: crypto.createHash('sha256').update(f.content).digest('hex'),
+      content: f.content,
+    }));
+
+    const fileAnalysisObj: Record<string, FileAnalysis> = {};
+    for (const [k, v] of fileAnalysisMap.entries()) {
+      fileAnalysisObj[k] = v;
+    }
+
+    await this.store.saveRepository(
+      {
+        repoId,
+        commitSha,
+        metadata,
+        analysis: fullAnalysis,
+        fileTree,
+        fileAnalysisMap: fileAnalysisObj,
+        ingestedAt: nowIso,
+        lastAccessedAt: nowIso,
+      },
+      storedFiles
+    );
+
+    // Prune repositories beyond MAX_STORED_REPOS
+    await this.store.pruneOldRepositories(config.MAX_STORED_REPOS);
+
     const repoState: RepositoryState = {
-      id: `${owner}/${repo}`.toLowerCase(),
+      id: repoId,
+      commitSha,
       metadata,
       files: downloadedFiles,
       fileTree,
       fileAnalysisMap,
       analysis: fullAnalysis,
       indexer,
-      ingestedAt: new Date().toISOString(),
+      ingestedAt: nowIso,
     };
 
-    this.repositories.set(repoState.id, repoState);
+    this.activeRepositories.set(repoState.id, repoState);
 
     // Complete Job
-    this.updateJobProgress(job, 'completed', `Repository analysis complete! Indexed ${downloadedFiles.length} files.`, 100, {
+    await this.updateJobProgress(job, 'completed', `Repository analysis complete! Indexed ${downloadedFiles.length} files.`, 100, {
       warnings,
     });
   }
@@ -332,7 +498,6 @@ export class RepositoryManager {
     const rootNodes: RepositoryFileNode[] = [];
     const dirMap: Map<string, RepositoryFileNode> = new Map();
 
-    // Sort files alphabetically
     const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
 
     for (const file of sorted) {

@@ -18,6 +18,9 @@ const EnvSchema = z.object({
   MAX_TOTAL_REPO_BYTES: z.coerce.number().default(25000000), // ~25MB
   CHUNK_SIZE_LINES: z.coerce.number().default(120),
   CHUNK_OVERLAP_LINES: z.coerce.number().default(20),
+  MAX_STORED_REPOS: z.coerce.number().default(20),
+  DB_PATH: z.string().optional(),
+  MONGODB_URI: z.string().optional().default(''),
 });
 
 export type AppConfig = z.infer<typeof EnvSchema>;
@@ -42,7 +45,19 @@ export function getConfigSummary() {
     geminiConfigured: Boolean(config.GEMINI_API_KEY && config.GEMINI_API_KEY.length > 5),
     geminiModel: config.GEMINI_MODEL,
     githubTokenConfigured: Boolean(config.GITHUB_TOKEN && config.GITHUB_TOKEN.length > 5),
+    mongodbConfigured: Boolean(config.MONGODB_URI && config.MONGODB_URI.length > 5),
     maxRepoFiles: config.MAX_REPO_FILES,
     maxFileSizeBytes: config.MAX_FILE_SIZE_BYTES,
+    maxStoredRepos: config.MAX_STORED_REPOS,
   };
+}
+
+export function getDatabasePath(): string {
+  if (config.DB_PATH && config.DB_PATH.trim().length > 0) {
+    return path.resolve(config.DB_PATH);
+  }
+  const isBackendDir = path.basename(process.cwd()) === 'backend';
+  return isBackendDir
+    ? path.resolve(process.cwd(), 'data/app.db')
+    : path.resolve(process.cwd(), 'backend/data/app.db');
 }

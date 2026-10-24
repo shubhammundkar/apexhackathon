@@ -261,3 +261,56 @@ export interface JobStatusResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// ==========================================
+// 7. USER AUTHENTICATION & HISTORY
+// ==========================================
+
+export const RegisterRequestSchema = z.object({
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(30, 'Username cannot exceed 30 characters'),
+  email: z.string().trim().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password cannot exceed 100 characters'),
+});
+
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+
+export const LoginRequestSchema = z.object({
+  identifier: z.string().trim().min(1, 'Username or email is required'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+
+export interface UserSummary {
+  id: string;
+  username: string;
+  email: string;
+  createdAt?: string;
+}
+
+export interface AuthResponse {
+  user: UserSummary;
+  token: string;
+}
+
+export interface QAHistoryItem {
+  id: string;
+  repoId: string;
+  commitSha?: string;
+  userId?: string;
+  sessionId?: string;
+  question: string;
+  answer: string;
+  citations: SearchCitation[];
+  modelUsed?: string;
+  createdAt: string;
+}
+
+export interface RecentRepositoryItem {
+  id: string;
+  name: string;
+  stars: number;
+  lastAccessedAt: string;
+  ingestedAt?: string;
+}
+

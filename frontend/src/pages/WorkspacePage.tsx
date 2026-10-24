@@ -1164,6 +1164,8 @@ export const WorkspacePage: React.FC = () => {
           onAskQuestion={handleAskQuestion}
           currentFilePath={selectedFilePath || undefined}
           onNavigateToCitation={handleNavigateToCitation}
+          owner={owner}
+          repo={repo}
         />
       </div>
     </div>

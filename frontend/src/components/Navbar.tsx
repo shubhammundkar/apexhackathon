@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Cpu, Settings, Github, Sparkles, FolderGit2, Sun, Moon } from 'lucide-react';
+import { Cpu, Settings, Github, Sparkles, FolderGit2, Sun, Moon, LogIn, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   onOpenSettings: () => void;
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeRepo,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user, openAuthModal, logout } = useAuth();
 
   return (
     <header className="h-14 border-b border-surface-border bg-surface/90 backdrop-blur-md px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors">
@@ -46,6 +48,38 @@ export const Navbar: React.FC<NavbarProps> = ({
             {hasCustomKey ? 'Custom API Key' : geminiConfigured ? 'Server Gemini Ready' : 'API Key Setup'}
           </span>
         </div>
+
+        {/* Optional Auth / Account Button */}
+        {user ? (
+          <div className="flex items-center space-x-1 bg-surface-subtle border border-surface-border rounded-lg p-0.5 pl-2">
+            <div className="flex items-center space-x-1.5 text-xs text-slate-800 dark:text-slate-200">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-primary-500 to-indigo-600 text-[10px] text-white flex items-center justify-center font-bold">
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+              <span className="font-medium max-w-[85px] truncate hidden md:inline">{user.username}</span>
+            </div>
+            <button
+              id="navbar-logout-btn"
+              type="button"
+              onClick={logout}
+              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              title="Sign out of account"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            id="navbar-signin-btn"
+            type="button"
+            onClick={openAuthModal}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-primary-500/30 bg-primary-500/10 text-primary-600 dark:text-primary-300 hover:bg-primary-500/20 transition-all flex items-center space-x-1.5 shadow-sm"
+            title="Sign in or create free account (optional)"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </button>
+        )}
 
         {/* Theme Exchange Switch Button (Light / Dark) */}
         <button

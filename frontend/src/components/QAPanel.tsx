@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchCitation, QAResponse } from '@codebase-explainer/shared';
+import { apiClient } from '../api/client';
 import {
   Send,
   Sparkles,
@@ -11,6 +12,7 @@ import {
   Check,
   Loader2,
   X,
+  Database,
 } from 'lucide-react';
 
 interface QAPanelProps {
@@ -24,6 +26,8 @@ interface QAPanelProps {
   onNavigateToCitation: (citation: SearchCitation) => void;
   isOpen: boolean;
   onClose: () => void;
+  owner?: string;
+  repo?: string;
 }
 
 interface MessageItem {
@@ -73,6 +77,8 @@ export const QAPanel: React.FC<QAPanelProps> = ({
   onNavigateToCitation,
   isOpen,
   onClose,
+  owner,
+  repo,
 }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
@@ -81,6 +87,43 @@ export const QAPanel: React.FC<QAPanelProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [globalTier, setGlobalTier] = useState<ExplanationTier>('all');
   const [msgTierMap, setMsgTierMap] = useState<Record<string, ExplanationTier>>({});
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+
+  // Load previous Q&A history for this repository from MongoDB/backend
+  useEffect(() => {
+    if (!owner || !repo) return;
+    let isMounted = true;
+    apiClient
+      .getQAHistory(owner, repo)
+      .then((data) => {
+        if (!isMounted || !data.history || data.history.length === 0) return;
+        const loaded: MessageItem[] = [];
+        for (const item of data.history) {
+          loaded.push({
+            id: `${item.id}_u`,
+            sender: 'user',
+            content: item.question,
+            timestamp: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+          loaded.push({
+            id: `${item.id}_a`,
+            sender: 'assistant',
+            content: item.answer,
+            citations: item.citations,
+            timestamp: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+        }
+        setMessages((prev) => (prev.length === 0 ? loaded : prev));
+        setIsHistoryLoaded(true);
+      })
+      .catch((err) => {
+        console.warn('Could not load QA history from MongoDB:', err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [owner, repo]);
 
   if (!isOpen) return null;
 
@@ -167,7 +210,15 @@ export const QAPanel: React.FC<QAPanelProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">Codebase Q&A</span>
+            <div className="flex items-center space-x-2">
+              <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">Codebase Q&A</span>
+              {isHistoryLoaded && messages.length > 0 && (
+                <span className="inline-flex items-center space-x-1 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded font-medium border border-emerald-500/20">
+                  <Database className="w-2.5 h-2.5" />
+                  <span>MongoDB Synced</span>
+                </span>
+              )}
+            </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">3-Way Explanations (Beginner / Low-Level / Deep Tech)</span>
           </div>
         </div>

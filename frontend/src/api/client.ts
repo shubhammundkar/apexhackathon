@@ -5,6 +5,10 @@ import {
   QAResponse,
   SourceFile,
   FileAnalysis,
+  AuthResponse,
+  UserSummary,
+  QAHistoryItem,
+  RecentRepositoryItem,
 } from '@codebase-explainer/shared';
 
 const API_BASE = '/api';
@@ -23,10 +27,31 @@ export class ApiError extends Error {
   }
 }
 
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    let sessionId = localStorage.getItem('anonymous_session_id');
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).substring(2, 12);
+      localStorage.setItem('anonymous_session_id', sessionId);
+    }
+    headers['x-session-id'] = sessionId;
+  } catch {
+    // Fallback if localStorage unavailable
+  }
+  return headers;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+  const authHeaders = getAuthHeaders();
   const headers = {
     'Content-Type': 'application/json',
+    ...authHeaders,
     ...(options.headers || {}),
   };
 
@@ -117,9 +142,13 @@ export const apiClient = {
       onChunk?: (text: string) => void;
     }
   ): Promise<QAResponse> => {
+    const authHeaders = getAuthHeaders();
     const res = await fetch(`/api/repositories/${owner}/${repo}/questions/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
       body: JSON.stringify(params),
     });
 
@@ -180,4 +209,28 @@ export const apiClient = {
       answeredAt: new Date().toISOString(),
     };
   },
+
+  // Auth methods
+  register: (params: { username: string; email: string; password: string }) =>
+    request<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  login: (params: { identifier: string; password: string }) =>
+    request<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  getMe: () => request<{ user: UserSummary }>('/auth/me'),
+
+  // Recent Repositories and Q&A history
+  getRecentRepositories: () =>
+    request<{ repositories: Array<RecentRepositoryItem & { isUserRepo?: boolean }> }>('/repositories'),
+
+  getQAHistory: (owner: string, repo: string) =>
+    request<{ repositoryId: string; history: QAHistoryItem[] }>(
+      `/repositories/${owner}/${repo}/questions/history`
+    ),
 };

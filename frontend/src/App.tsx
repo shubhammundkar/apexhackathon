@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { SettingsModal } from './components/SettingsModal';
+import { AuthModal } from './components/AuthModal';
 import { LandingPage } from './pages/LandingPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { apiClient } from './api/client';
@@ -53,6 +54,8 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         serverGeminiConfigured={serverGeminiConfigured}
       />
+
+      <AuthModal />
     </div>
   );
 };

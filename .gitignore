@@ -43,3 +43,10 @@ test-results/
 .repo_cache/
 temp/
 tmp/
+
+# SQLite Database and App Data
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

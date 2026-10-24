@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, ApiError } from '../api/client';
 import { ProgressBar } from '../components/ProgressBar';
-import { IngestionProgress } from '@codebase-explainer/shared';
+import { IngestionProgress, RecentRepositoryItem } from '@codebase-explainer/shared';
+import { useAuth } from '../context/AuthContext';
 import {
   Github,
   Sparkles,
@@ -11,6 +12,10 @@ import {
   GitBranch,
   Terminal,
   ArrowRight,
+  Clock,
+  FolderGit2,
+  Star,
+  LogIn,
 } from 'lucide-react';
 
 const SAMPLE_REPOS = [
@@ -22,6 +27,7 @@ const SAMPLE_REPOS = [
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, openAuthModal } = useAuth();
   const [repoUrl, setRepoUrl] = useState('');
   const [branch, setBranch] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -29,8 +35,28 @@ export const LandingPage: React.FC = () => {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [progress, setProgress] = useState<IngestionProgress | null>(null);
+  const [recentRepos, setRecentRepos] = useState<Array<RecentRepositoryItem & { isUserRepo?: boolean }>>([]);
 
   const pollIntervalRef = React.useRef<any>(null);
+
+  // Fetch recently analyzed repositories on mount or user change
+  useEffect(() => {
+    let isMounted = true;
+    apiClient
+      .getRecentRepositories()
+      .then((data) => {
+        if (isMounted) {
+          setRecentRepos(data.repositories || []);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load recent repositories:', err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Poll job status until complete or failed
   const startPolling = (jobId: string, repositoryId: string) => {
@@ -212,6 +238,79 @@ export const LandingPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Previously Analyzed Repositories (MongoDB) */}
+        {recentRepos.length > 0 && (
+          <div className="max-w-3xl mx-auto space-y-2.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400 flex items-center space-x-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Your Previously Analyzed Repositories</span>
+              </span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                Stored in MongoDB
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {recentRepos.map((repo) => (
+                <div
+                  key={repo.id}
+                  onClick={() => navigate(`/workspace/${repo.id}`)}
+                  className="p-3.5 rounded-xl bg-surface hover:bg-surface-subtle border border-surface-border hover:border-primary-500/50 cursor-pointer transition-all group flex items-start justify-between shadow-sm hover:shadow-md"
+                >
+                  <div className="space-y-1 truncate mr-2">
+                    <div className="flex items-center space-x-1.5">
+                      <FolderGit2 className="w-4 h-4 text-primary-500" />
+                      <span className="font-mono text-xs font-bold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        {repo.id}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      {repo.stars > 0 && (
+                        <span className="flex items-center space-x-0.5">
+                          <Star className="w-3 h-3 text-amber-500" />
+                          <span>{repo.stars.toLocaleString()}</span>
+                        </span>
+                      )}
+                      <span>•</span>
+                      <span>
+                        {new Date(repo.lastAccessedAt).toLocaleDateString([], {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1 text-xs text-primary-600 dark:text-primary-400 font-medium mt-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>Open</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Optional Sign In Prompt when anonymous */}
+        {!user && (
+          <div className="max-w-3xl mx-auto p-3 rounded-xl bg-surface-subtle/80 border border-surface-border flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-primary-500 flex-shrink-0" />
+              <span>
+                Browsing anonymously. Repositories and Q&A are saved to your browser and cloud session.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="text-primary-600 dark:text-primary-400 hover:underline font-semibold flex items-center space-x-1 ml-3 flex-shrink-0"
+            >
+              <LogIn className="w-3 h-3" />
+              <span>Sign In (Optional)</span>
+            </button>
+          </div>
+        )}
 
         {/* Sample Repositories to Try */}
         <div className="max-w-3xl mx-auto space-y-2">

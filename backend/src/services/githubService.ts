@@ -116,6 +116,22 @@ export class GitHubService {
     };
   }
 
+  public async fetchCommitSha(owner: string, repo: string, branch: string): Promise<string> {
+    try {
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(branch)}`;
+      const response = await fetch(apiUrl, { headers: this.getHeaders() });
+      if (response.ok) {
+        const data: any = await response.json();
+        if (data && typeof data.sha === 'string') {
+          return data.sha;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return branch;
+  }
+
   public async fetchTree(owner: string, repo: string, branch: string): Promise<GitHubTreeResponse> {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
     const response = await fetch(apiUrl, { headers: this.getHeaders() });
