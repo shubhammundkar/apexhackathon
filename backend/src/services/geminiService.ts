@@ -19,6 +19,30 @@ export interface AnalysisGenerationResult {
   modelUsed: string;
 }
 
+/**
+ * Formats retrieved SearchCitations into an LLM evidence block.
+ * Each block shows "[EVIDENCE #n] path (lines a-b) kind symbolName"
+ * and every code line is prefixed with its original file line number.
+ */
+export function formatEvidence(citations: SearchCitation[]): string {
+  if (!citations || citations.length === 0) {
+    return 'No direct code matches found in retrieved files.';
+  }
+
+  return citations
+    .map((c, i) => {
+      const kindStr = c.kind ? ` ${c.kind}` : '';
+      const symbolStr = c.symbolName ? ` ${c.symbolName}` : '';
+      const lines = c.snippet.split('\n');
+      const numberedSnippet = lines
+        .map((line, lineIdx) => `${c.startLine + lineIdx} | ${line}`)
+        .join('\n');
+
+      return `[EVIDENCE #${i + 1}] ${c.filePath} (lines ${c.startLine}-${c.endLine})${kindStr}${symbolStr}\n\`\`\`\n${numberedSnippet}\n\`\`\``;
+    })
+    .join('\n\n');
+}
+
 export class GeminiService {
   private defaultApiKey: string;
   private defaultModel: string;
@@ -195,6 +219,8 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
     throw new Error(`Gemini API Error: ${lastError?.message || lastError}`);
   }
 
+
+
   /**
    * Answers natural language questions grounded strictly in retrieved source citations
    */
@@ -212,13 +238,7 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
       (m, idx, arr) => arr.indexOf(m) === idx
     );
 
-    const evidenceText = citations.map((c, i) => `
-[EVIDENCE #${i + 1}]
-File: ${c.filePath} (Lines ${c.startLine}-${c.endLine})
-\`\`\`
-${c.snippet}
-\`\`\`
-`).join('\n');
+    const evidenceText = formatEvidence(citations);
 
     const prompt = `
 You are a senior codebase explainer. The user is asking a question about the repository "${metadata.fullName}".
@@ -230,14 +250,15 @@ ${question}
 ${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
 
 RETRIEVED CODE EVIDENCE:
-${evidenceText || 'No direct code matches found in retrieved files.'}
+${evidenceText}
 
 RULES:
 1. Always ground your explanations in the provided evidence.
 2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
-3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
-4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
-5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+3. Cite only line ranges that lie inside the evidence blocks shown.
+4. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
+5. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 
@@ -296,13 +317,7 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
       (m, idx, arr) => arr.indexOf(m) === idx
     );
 
-    const evidenceText = citations.map((c, i) => `
-[EVIDENCE #${i + 1}]
-File: ${c.filePath} (Lines ${c.startLine}-${c.endLine})
-\`\`\`
-${c.snippet}
-\`\`\`
-`).join('\n');
+    const evidenceText = formatEvidence(citations);
 
     const prompt = `
 You are a senior codebase explainer. The user is asking a question about the repository "${metadata.fullName}".
@@ -314,14 +329,15 @@ ${question}
 ${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
 
 RETRIEVED CODE EVIDENCE:
-${evidenceText || 'No direct code matches found in retrieved files.'}
+${evidenceText}
 
 RULES:
 1. Always ground your explanations in the provided evidence.
 2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
-3. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
-4. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
-5. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+3. Cite only line ranges that lie inside the evidence blocks shown.
+4. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
+5. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 

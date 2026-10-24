@@ -107,6 +107,19 @@ export interface SourceFile {
   isTruncated?: boolean;
 }
 
+export type ChunkKind =
+  | 'module'
+  | 'class_header'
+  | 'function'
+  | 'method'
+  | 'group'
+  | 'part'
+  | 'doc'
+  | 'config'
+  | 'window';
+
+export type CitationRole = 'hit' | 'parent' | 'context';
+
 export interface CodeChunk {
   id: string;
   filePath: string;
@@ -115,6 +128,21 @@ export interface CodeChunk {
   content: string;
   language: string;
   symbols?: string[];
+  kind?: ChunkKind;
+  symbolName?: string;
+  className?: string;
+  parentChunkId?: string;
+  parentSymbol?: string;
+  partIndex?: number;
+  partCount?: number;
+  isExported?: boolean;
+  isTest?: boolean;
+  searchText?: string;
+  chunkerVersion?: string;
+  oversized?: boolean;
+  memberNames?: string[];
+  role?: CitationRole;
+  score?: number;
 }
 
 export interface SearchCitation {
@@ -123,6 +151,12 @@ export interface SearchCitation {
   endLine: number;
   snippet: string;
   relevanceScore?: number;
+  kind?: ChunkKind;
+  symbolName?: string;
+  className?: string;
+  role?: CitationRole;
+  score?: number;
+  parentChunkId?: string;
 }
 
 // ==========================================

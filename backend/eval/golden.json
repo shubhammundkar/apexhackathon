@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "question": "where are GitHub URLs validated?",
+    "expectedFile": "backend/src/services/githubService.ts",
+    "expectedSymbol": "parseRepoUrl",
+    "reviewed": false,
+    "note": "parseRepoUrl parses hostname, path segments, and validates alphanumeric characters"
+  },
+  {
+    "id": 2,
+    "question": "how are secrets redacted?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "redactSecrets",
+    "reviewed": false,
+    "note": "redactSecrets checks regex patterns for API keys, tokens, and private keys"
+  },
+  {
+    "id": 3,
+    "question": "how does a Q&A request get rejected as unrelated?",
+    "expectedFile": "backend/src/services/queryRelevanceService.ts",
+    "expectedSymbol": "classify",
+    "reviewed": false,
+    "note": "QueryRelevanceService classify method checks irrelevant patterns and code intent"
+  },
+  {
+    "id": 4,
+    "question": "where is path traversal prevented for ingested files?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "isSafePath",
+    "reviewed": false,
+    "note": "isSafePath checks for relative parent directories '../' and absolute root starts"
+  },
+  {
+    "id": 5,
+    "question": "how does the system detect the programming language of a file?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "detectLanguage",
+    "reviewed": false,
+    "note": "detectLanguage maps file extension and special filenames to language names"
+  },
+  {
+    "id": 6,
+    "question": "where are files filtered out by size or extension during ingestion?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "shouldIncludeFile",
+    "reviewed": false,
+    "note": "shouldIncludeFile checks directories, binary extensions, and MAX_FILE_SIZE_BYTES"
+  },
+  {
+    "id": 7,
+    "question": "which function checks whether a file contains private credentials or keys?",
+    "expectedFile": "backend/src/services/fileFilterService.ts",
+    "expectedSymbol": "isSecretFile",
+    "reviewed": false,
+    "note": "isSecretFile checks .env, .pem, .key, id_rsa, and credential filenames"
+  },
+  {
+    "id": 8,
+    "question": "how are authentication JWT tokens verified?",
+    "expectedFile": "backend/src/services/authService.ts",
+    "expectedSymbol": "verifyToken",
+    "reviewed": false,
+    "note": "verifyToken validates and decodes user JWTs"
+  },
+  {
+    "id": 9,
+    "question": "how are user passwords hashed before storage?",
+    "expectedFile": "backend/src/services/authService.ts",
+    "expectedSymbol": "hashPassword",
+    "reviewed": false,
+    "note": "hashPassword computes secure password hashes"
+  },
+  {
+    "id": 10,
+    "question": "where are session tokens generated upon login?",
+    "expectedFile": "backend/src/services/authService.ts",
+    "expectedSymbol": "createToken",
+    "reviewed": false,
+    "note": "createToken signs a new token payload"
+  },
+  {
+    "id": 11,
+    "question": "how are questions answered using Gemini with retrieved code citations?",
+    "expectedFile": "backend/src/services/geminiService.ts",
+    "expectedSymbol": "answerQuestion",
+    "reviewed": false,
+    "note": "answerQuestion in GeminiService builds prompt with evidence and calls Gemini model"
+  },
+  {
+    "id": 12,
+    "question": "where does real-time streaming question answering take place?",
+    "expectedFile": "backend/src/services/geminiService.ts",
+    "expectedSymbol": "answerQuestionStream",
+    "reviewed": false,
+    "note": "answerQuestionStream streams responses token-by-token"
+  },
+  {
+    "id": 13,
+    "question": "how is the initial architectural overview generated for a repository?",
+    "expectedFile": "backend/src/services/geminiService.ts",
+    "expectedSymbol": "generateRepositoryAnalysis",
+    "reviewed": false,
+    "note": "generateRepositoryAnalysis generates tech stack, architecture diagram, and summary"
+  },
+  {
+    "id": 14,
+    "question": "where is the Git tree fetched from the GitHub REST API?",
+    "expectedFile": "backend/src/services/githubService.ts",
+    "expectedSymbol": "fetchTree",
+    "reviewed": false,
+    "note": "fetchTree fetches recursive git tree using repo commit sha"
+  },
+  {
+    "id": 15,
+    "question": "how is a repository ingestion job queued and started?",
+    "expectedFile": "backend/src/services/repositoryManager.ts",
+    "expectedSymbol": "startAnalysis",
+    "reviewed": false,
+    "note": "startAnalysis sets up the job progress and kicks off ingestion"
+  },
+  {
+    "id": 16,
+    "question": "where is the hierarchical file tree structure constructed from flat paths?",
+    "expectedFile": "backend/src/services/repositoryManager.ts",
+    "expectedSymbol": "buildFileTree",
+    "reviewed": false,
+    "note": "buildFileTree builds nested RepositoryFileNode tree from file list"
+  },
+  {
+    "id": 17,
+    "question": "where are repository language distribution percentages computed?",
+    "expectedFile": "backend/src/services/repositoryManager.ts",
+    "expectedSymbol": "calculateLanguageStats",
+    "reviewed": false,
+    "note": "calculateLanguageStats tallies line counts per language"
+  },
+  {
+    "id": 18,
+    "question": "how are environment variables parsed and validated at startup?",
+    "expectedFile": "backend/src/config.ts",
+    "expectedSymbol": "loadConfig",
+    "reviewed": false,
+    "note": "loadConfig validates environment configuration with zod"
+  },
+  {
+    "id": 19,
+    "question": "how are three-tier markdown answers parsed in the QA panel?",
+    "expectedFile": "frontend/src/components/QAPanel.tsx",
+    "expectedSymbol": "parseTieredContent",
+    "reviewed": false,
+    "note": "parseTieredContent extracts beginner, low-level, and deep technical sections"
+  },
+  {
+    "id": 20,
+    "question": "where are old cached repositories pruned to free memory?",
+    "expectedFile": "backend/src/store/memoryStore.ts",
+    "expectedSymbol": "pruneOldRepositories",
+    "reviewed": false,
+    "note": "pruneOldRepositories deletes least-recently-used repos"
+  }
+]

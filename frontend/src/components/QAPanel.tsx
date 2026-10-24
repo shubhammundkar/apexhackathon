@@ -392,6 +392,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                           <div
                             key={i}
                             onClick={() => onNavigateToCitation(c)}
+                            title={c.symbolName ? `${c.symbolName} · lines ${c.startLine}-${c.endLine}` : `${c.filePath}:${c.startLine}-${c.endLine}`}
                             className="flex items-center justify-between p-1.5 rounded bg-surface hover:bg-surface-muted border border-surface-border cursor-pointer transition-colors group text-[11px]"
                           >
                             <div className="flex items-center space-x-1.5 truncate mr-2">
@@ -400,7 +401,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                                 {c.filePath}
                               </span>
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono flex-shrink-0">
-                                :{c.startLine}-{c.endLine}
+                                {c.symbolName ? ` • ${c.symbolName} · lines ${c.startLine}-${c.endLine}` : `:${c.startLine}-${c.endLine}`}
                               </span>
                             </div>
                             <ArrowRight className="w-3 h-3 text-slate-400 dark:text-slate-500 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0" />

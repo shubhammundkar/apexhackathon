@@ -18,10 +18,20 @@ const EnvSchema = z.object({
   MAX_TOTAL_REPO_BYTES: z.coerce.number().default(25000000), // ~25MB
   CHUNK_SIZE_LINES: z.coerce.number().default(120),
   CHUNK_OVERLAP_LINES: z.coerce.number().default(20),
+  CHUNKING_MODE: z.enum(['line', 'syntax']).default('syntax'),
+  MAX_CHUNK_CHARS: z.coerce.number().default(1500),
+  SYMBOL_BOOST: z.coerce.number().default(3),
+  PATH_BOOST: z.coerce.number().default(2),
+  BM25_K1: z.coerce.number().default(1.2),
+  BM25_B: z.coerce.number().default(0.75),
+  CONTEXT_TOKEN_BUDGET: z.coerce.number().default(6000),
+  MAX_EXTRA_BLOCKS: z.coerce.number().default(4),
   MAX_STORED_REPOS: z.coerce.number().default(20),
   DB_PATH: z.string().optional(),
   MONGODB_URI: z.string().optional().default(''),
 });
+
+export const CHUNKER_VERSION = '2.0.0';
 
 export type AppConfig = z.infer<typeof EnvSchema>;
 

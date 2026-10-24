@@ -8,15 +8,15 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -n \"backend,frontend\" -c \"blue.bold,magenta.bold\" \"pnpm --filter @codebase-explainer/backend dev\" \"pnpm --filter @codebase-explainer/frontend dev\"",
-    "dev:backend": "pnpm --filter @codebase-explainer/backend dev",
-    "dev:frontend": "pnpm --filter @codebase-explainer/frontend dev",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "test:backend": "pnpm --filter @codebase-explainer/backend test",
-    "test:frontend": "pnpm --filter @codebase-explainer/frontend test",
-    "lint": "pnpm -r --if-present lint",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue.bold,magenta.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:backend": "npm run test --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

@@ -7,7 +7,8 @@
     "build": "tsc || true",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bench:chunking": "tsx eval/chunking-benchmark.ts"
   },
   "dependencies": {
     "@codebase-explainer/shared": "workspace:*",
@@ -19,6 +20,9 @@
     "helmet": "^7.1.0",
     "ignore": "^5.3.2",
     "mongodb": "^7.7.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "typescript": "^5.5.4",
+    "web-tree-sitter": "^0.27.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -28,7 +32,6 @@
     "@types/supertest": "^6.0.2",
     "supertest": "^7.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.4",
     "vitest": "^2.1.1"
   }
 }
