@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -37,25 +39,35 @@ export function createApp() {
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-  // Root endpoint info
-  app.get('/', (_req: Request, res: Response) => {
-    res.json({
-      name: 'Codebase Explainer AI Backend API',
-      status: 'running',
-      frontendUrl: 'http://localhost:5173',
-      endpoints: {
-        health: '/api/health',
-        analyze: 'POST /api/repositories/analyze',
-      },
-      message: 'To use the web application interface, open http://localhost:5173 in your browser.',
-    });
-  });
-
   // API Router
   app.use('/api', apiRouter);
 
-  // 404 handler
-  app.use((_req: Request, res: Response) => {
+  // Serve static frontend assets in production if built
+  const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+  if (fs.existsSync(frontendDist)) {
+    app.use(express.static(frontendDist));
+    app.get('*', (req: Request, res: Response, next: NextFunction) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+  } else {
+    // Root endpoint info for standalone API mode
+    app.get('/', (_req: Request, res: Response) => {
+      res.json({
+        name: 'Codebase Explainer AI Backend API',
+        status: 'running',
+        frontendUrl: 'http://localhost:5173',
+        endpoints: {
+          health: '/api/health',
+          analyze: 'POST /api/repositories/analyze',
+        },
+        message: 'To use the web application interface, open http://localhost:5173 in your browser.',
+      });
+    });
+  }
+
+  // 404 handler for unmatched API routes
+  app.use('/api/*', (_req: Request, res: Response) => {
     res.status(404).json({
       error: 'NOT_FOUND',
       message: 'The requested API endpoint does not exist',

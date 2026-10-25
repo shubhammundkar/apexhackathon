@@ -1,0 +1,9 @@
+node_modules
+.git
+.github
+dist
+build
+.env
+*.log
+scratch
+docs/K_BASELINE.json
