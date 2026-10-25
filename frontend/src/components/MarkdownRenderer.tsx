@@ -178,26 +178,29 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       const level = headingMatch[1].length;
       const headingText = headingMatch[2];
 
+      // Strip circle emojis (🟢, 🟡, 🟣, 🔴, etc.) from headings
+      const cleanHeadingText = headingText.replace(/^[🟢🟡🟣🔴⚪⚫\s]+/, '').trim();
+
       if (level === 1) {
         elements.push(
           <h1 key={`h-${i}`} className="text-base font-bold text-slate-900 dark:text-white mt-3.5 mb-1.5 pb-1 border-b border-surface-border">
-            {renderInlineSpans(headingText, onNavigateToCitation, citations)}
+            {renderInlineSpans(cleanHeadingText, onNavigateToCitation, citations)}
           </h1>
         );
       } else if (level === 2) {
         elements.push(
           <h2 key={`h-${i}`} className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-3 mb-1.5">
-            {renderInlineSpans(headingText, onNavigateToCitation, citations)}
+            {renderInlineSpans(cleanHeadingText, onNavigateToCitation, citations)}
           </h2>
         );
       } else {
-        // H3/H4 (Commonly used by 🟢 Beginner, 🟡 Low-Level, 🟣 Deep Technical)
+        // H3/H4 (Commonly used by Beginner, Low-Level, Deep Technical)
         elements.push(
           <div
             key={`h-${i}`}
             className="flex items-center space-x-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 mt-3 mb-1.5 pb-0.5 border-b border-surface-border/40"
           >
-            <span>{renderInlineSpans(headingText, onNavigateToCitation, citations)}</span>
+            <span>{renderInlineSpans(cleanHeadingText, onNavigateToCitation, citations)}</span>
           </div>
         );
       }

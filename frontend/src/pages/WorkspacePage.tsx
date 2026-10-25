@@ -773,7 +773,6 @@ export const WorkspacePage: React.FC = () => {
                           : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
-                      <span>🟢</span>
                       <span>Beginner (ELI5)</span>
                     </button>
 
@@ -784,7 +783,6 @@ export const WorkspacePage: React.FC = () => {
                           : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
-                      <span>🟡</span>
                       <span>Low-Level Technical</span>
                     </button>
 
@@ -795,7 +793,6 @@ export const WorkspacePage: React.FC = () => {
                           : 'text-[#1F2937] dark:text-slate-200 hover:text-[#111827] dark:hover:text-white'
                         }`}
                     >
-                      <span>🟣</span>
                       <span>Full Technical Blueprint</span>
                     </button>
                   </div>

@@ -242,25 +242,25 @@ export const QAPanel: React.FC<QAPanelProps> = ({
             onClick={() => setGlobalTier('beginner')}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${globalTier === 'beginner' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
           >
-            🟢 Beginner
+            Beginner
           </button>
           <button
             onClick={() => setGlobalTier('lowLevel')}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${globalTier === 'lowLevel' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
           >
-            🟡 Low-Level
+            Low-Level
           </button>
           <button
             onClick={() => setGlobalTier('deepTechnical')}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${globalTier === 'deepTechnical' ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
           >
-            🟣 Deep Tech
+            Deep Tech
           </button>
           <button
             onClick={() => setGlobalTier('all')}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${globalTier === 'all' ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
           >
-            📄 All
+            All
           </button>
         </div>
       </div>
@@ -349,7 +349,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                           }`}
                       >
-                        <span>🟢 Beginner</span>
+                        <span>Beginner</span>
                       </button>
                       <button
                         onClick={() => setTierForMsg(msg.id, 'lowLevel')}
@@ -358,7 +358,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                           }`}
                       >
-                        <span>🟡 Low-Level</span>
+                        <span>Low-Level</span>
                       </button>
                       <button
                         onClick={() => setTierForMsg(msg.id, 'deepTechnical')}
@@ -367,7 +367,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                           }`}
                       >
-                        <span>🟣 Deep Tech</span>
+                        <span>Deep Tech</span>
                       </button>
                       <button
                         onClick={() => setTierForMsg(msg.id, 'all')}
@@ -376,7 +376,7 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                           }`}
                       >
-                        <span>📄 All Tiers</span>
+                        <span>All Tiers</span>
                       </button>
                     </div>
                   )}
