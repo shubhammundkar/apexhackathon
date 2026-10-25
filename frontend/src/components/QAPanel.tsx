@@ -14,6 +14,7 @@ import {
   X,
   Database,
 } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface QAPanelProps {
   onAskQuestion: (
@@ -380,7 +381,15 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap font-sans">{displayText}</div>
+                  {msg.sender === 'user' ? (
+                    <div className="whitespace-pre-wrap font-sans">{displayText}</div>
+                  ) : (
+                    <MarkdownRenderer
+                      content={displayText}
+                      onNavigateToCitation={onNavigateToCitation}
+                      citations={msg.citations}
+                    />
+                  )}
 
                   {/* Grounded Citations List */}
                   {msg.citations && msg.citations.length > 0 && (
