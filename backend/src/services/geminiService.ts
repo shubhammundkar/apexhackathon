@@ -157,7 +157,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
         "dependencies": ["other layer names"]
       }
     ],
-    "mermaidDiagram": "graph TD\\n  A[Frontend] --> B[API]\\n  B --> C[Database]\\n",
+    "mermaidDiagram": "graph TD\\n  subgraph Frontend [\"Frontend / View Layer\"]\\n    V[\"Views / XML Templates / Components\"] --> C[\"Client Scripts / API Caller\"]\\n  end\\n  subgraph Routing [\"Routing & Gateway Layer\"]\\n    R[\"Web Dispatcher / Router\"] --> AUTH[\"Session & Auth Guards\"]\\n  end\\n  subgraph Logic [\"Controllers & Services\"]\\n    CTRL[\"Route Controllers / Handlers\"] --> SVC[\"Domain Services & Business Rules\"]\\n  end\\n  subgraph Persistence [\"Data Access & Database\"]\\n    ORM[\"ORM Models & Query Builder\"] --> DB[(\"Database Store\")]\\n  end\\n  C -- \"1. User Action / Request\" --> R\\n  AUTH --> CTRL\\n  CTRL --> SVC\\n  SVC --> ORM\\n  ORM -- \"2. Query / Write\" --> DB\\n  DB -- \"3. Data Records\" --> ORM\\n  ORM --> SVC\\n  SVC --> CTRL\\n  CTRL -- \"4. Response Data / View\" --> V\\n",
     "dataFlowDescription": "Detailed trace of how data flows between layers"
   },
   "executionFlows": [
@@ -196,7 +196,17 @@ Respond ONLY with a valid JSON object matching this exact schema:
   ]
 }
 
-Ensure the mermaidDiagram is valid Mermaid syntax (avoid unescaped special characters in node labels).
+CRITICAL ARCHITECTURE DIAGRAM INSTRUCTIONS:
+- The "mermaidDiagram" MUST be a detailed, professional, multi-tier architectural flowchart (using 'graph TD' or 'graph LR') explaining the complete end-to-end data flow from the frontend view to the backend and database.
+- DO NOT generate a trivial 2 or 3-box diagram (avoid simple "Frontend -> Backend -> Database").
+- Structure the diagram into logical subgraphs representing the real layers discovered in the code:
+  1. Frontend / View Layer: Views, XML/QWeb/HTML templates, React/Vue/JS components, forms, client-side state, user actions.
+  2. Network / API Gateway Layer: HTTP / REST / JSON-RPC endpoints, routing, middleware, authentication guards.
+  3. Controller & Application Logic Layer: Controllers, route handlers, dispatchers, payload parsing, input validation.
+  4. Domain & Service Layer: Business logic modules, helper services, calculation routines, state managers.
+  5. Data Access & Persistence Layer: ORM models, record sets, SQL / NoSQL queries, database connections (e.g. PostgreSQL, SQLite, MongoDB).
+- Explicitly trace the complete data flow using labeled arrows showing how user input travels down to storage and how data returns back to update the view.
+- Ensure the mermaidDiagram is valid Mermaid syntax: avoid unescaped special characters, parentheses, or brackets in node labels (always wrap node text in double quotes, e.g. ID[\"Component Name\"]).
 DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
 `;
 
@@ -214,6 +224,16 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
         const response = await model.generateContent(prompt);
         const text = response.response.text();
         const parsed = JSON.parse(text);
+
+        if (parsed.architecture && typeof parsed.architecture.mermaidDiagram === 'string') {
+          let cleanDiagram = parsed.architecture.mermaidDiagram.trim();
+          if (cleanDiagram.startsWith('```mermaid')) {
+            cleanDiagram = cleanDiagram.replace(/^```mermaid\s*/i, '').replace(/```\s*$/i, '').trim();
+          } else if (cleanDiagram.startsWith('```')) {
+            cleanDiagram = cleanDiagram.replace(/^```\s*/, '').replace(/```\s*$/i, '').trim();
+          }
+          parsed.architecture.mermaidDiagram = cleanDiagram;
+        }
 
         return {
           overview: {

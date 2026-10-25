@@ -620,7 +620,7 @@ export class RepositoryManager {
             dependencies: [],
           },
         ],
-        mermaidDiagram: `graph TD\n  Client[Application Layer] --> Core[Core Engine]\n  Core --> Utilities[Utils & Helpers]`,
+        mermaidDiagram: this.generateFallbackMermaid(manifest, files, metadata),
         dataFlowDescription: 'Standard execution flow through detected entrypoints.',
       },
       importantFiles: Array.from(fileAnalysisMap.values()),
@@ -655,6 +655,58 @@ export class RepositoryManager {
         skippedByGroup,
       },
     };
+  }
+
+  private generateFallbackMermaid(manifest: any, files: SourceFile[], metadata: RepositoryMetadata): string {
+    const frontendFiles = files.filter(f => /\.(xml|html|vue|jsx|tsx|css|scss|js)$/i.test(f.path) && /(views|templates|static|frontend|client|web|ui)/i.test(f.path));
+    const controllerFiles = files.filter(f => /(controller|routes|api|endpoint|handler|view)/i.test(f.path) && /\.(py|ts|js|go|java|rb|php)$/i.test(f.path));
+    const modelFiles = files.filter(f => /(model|schema|entity|record|orm|dao)/i.test(f.path) && /\.(py|ts|js|go|java|rb|php)$/i.test(f.path));
+    const serviceFiles = files.filter(f => /(service|logic|manager|util|lib|helper|core)/i.test(f.path) && /\.(py|ts|js|go|java|rb|php)$/i.test(f.path));
+
+    const dbStack = manifest.stack?.find((s: any) => /(postgres|sql|mongo|sqlite|mariadb|redis)/i.test(s.name));
+    const dbName = dbStack ? dbStack.name : 'PostgreSQL / Relational Database';
+
+    const feLabel = frontendFiles.length > 0
+      ? 'UI Views and Templates (' + frontendFiles[0].path.split('/').pop() + ')'
+      : 'User Interface / Client Views';
+    const ctrlLabel = controllerFiles.length > 0
+      ? 'Controllers and Handlers (' + controllerFiles[0].path.split('/').pop() + ')'
+      : 'Application Controllers and Routes';
+    const svcLabel = serviceFiles.length > 0
+      ? 'Business and Domain Logic (' + serviceFiles[0].path.split('/').pop() + ')'
+      : 'Domain Services and Business Engine';
+    const modelLabel = modelFiles.length > 0
+      ? 'ORM Models and Schema (' + modelFiles[0].path.split('/').pop() + ')'
+      : 'ORM Entities and Models';
+
+    return 'graph TD\n' +
+      '  subgraph Frontend ["Frontend / View Layer"]\n' +
+      '    FE_VIEW["' + feLabel + '"]\n' +
+      '    FE_CLIENT["Client Scripts / Event Handlers"]\n' +
+      '  end\n\n' +
+      '  subgraph Gateway ["Network and Routing Layer"]\n' +
+      '    GW_ROUTE["HTTP / RPC Web Dispatcher"]\n' +
+      '    GW_AUTH["Authentication and Session Middleware"]\n' +
+      '  end\n\n' +
+      '  subgraph Backend ["Controllers and Application Logic"]\n' +
+      '    BE_CTRL["' + ctrlLabel + '"]\n' +
+      '    BE_SVC["' + svcLabel + '"]\n' +
+      '  end\n\n' +
+      '  subgraph Persistence ["Data Access and Storage"]\n' +
+      '    DB_ORM["' + modelLabel + '"]\n' +
+      '    DB_STORE[("' + dbName + '")]\n' +
+      '  end\n\n' +
+      '  FE_VIEW -- "1. User submits action / Form data" --> FE_CLIENT\n' +
+      '  FE_CLIENT -- "2. HTTP / JSON-RPC Request" --> GW_ROUTE\n' +
+      '  GW_ROUTE --> GW_AUTH\n' +
+      '  GW_AUTH -- "3. Validated Session and Params" --> BE_CTRL\n' +
+      '  BE_CTRL -- "4. Execute domain action" --> BE_SVC\n' +
+      '  BE_SVC -- "5. ORM Query / Mutation" --> DB_ORM\n' +
+      '  DB_ORM -- "6. Execute SQL / DB Operations" --> DB_STORE\n' +
+      '  DB_STORE -- "7. Return data records" --> DB_ORM\n' +
+      '  DB_ORM -- "8. Return active records / instances" --> BE_SVC\n' +
+      '  BE_SVC -- "9. Return processed payload" --> BE_CTRL\n' +
+      '  BE_CTRL -- "10. Render View Template / JSON Response" --> FE_VIEW';
   }
 
   public getGeminiService(): GeminiService {
