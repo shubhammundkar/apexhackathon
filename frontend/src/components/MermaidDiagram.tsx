@@ -73,7 +73,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface-subtle/30 border border-surface-border rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full min-h-[300px] bg-surface-subtle/30 border border-surface-border rounded-xl overflow-hidden">
       {/* Controls Bar */}
       <div className="h-10 border-b border-surface-border px-3.5 flex items-center justify-between bg-surface/90 text-xs">
         <span className="font-bold text-[#111827] dark:text-white">Architecture Diagram</span>

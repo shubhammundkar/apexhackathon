@@ -492,7 +492,13 @@ apiRouter.post('/repositories/:owner/:repo/questions', async (req: Request, res:
       repo.metadata,
       filePath,
       apiKey,
-      model
+      model,
+      {
+        detectedStack: repo.analysis?.overview?.detectedStack,
+        entryPoints: repo.analysis?.overview?.entryPoints,
+        architecturePattern: repo.analysis?.architecture?.pattern,
+        architectureDescription: repo.analysis?.architecture?.description,
+      }
     );
     qaResponse.retrieval = stats;
 
@@ -602,7 +608,13 @@ apiRouter.post('/repositories/:owner/:repo/questions/stream', async (req: Reques
       },
       filePath,
       apiKey,
-      model
+      model,
+      {
+        detectedStack: repo.analysis?.overview?.detectedStack,
+        entryPoints: repo.analysis?.overview?.entryPoints,
+        architecturePattern: repo.analysis?.architecture?.pattern,
+        architectureDescription: repo.analysis?.architecture?.description,
+      }
     );
     finalAnswer.retrieval = stats;
 

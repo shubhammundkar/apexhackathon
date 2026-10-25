@@ -93,4 +93,110 @@ export function handleAuth(token: string) {
     expect(results[0].snippet).toContain('handleAuth');
     expect(results[0].startLine).toBeGreaterThanOrEqual(1);
   });
+
+  it('detects nested multi-language stack (Python, FastAPI, SQLite, JS, HTML, CSS) and nested entrypoints without fabricating data', () => {
+    const multiLangFiles: SourceFile[] = [
+      {
+        path: 'backend/main.py',
+        language: 'Python',
+        size: 500,
+        lineCount: 20,
+        content: `
+from fastapi import FastAPI
+import uvicorn
+from .database import init_db
+
+app = FastAPI(title="Mandi Saathi")
+
+@app.on_event("startup")
+def startup():
+    init_db()
+
+if __name__ == "__main__":
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000)
+`,
+      },
+      {
+        path: 'backend/database.py',
+        language: 'Python',
+        size: 400,
+        lineCount: 15,
+        content: `
+import sqlite3
+
+def init_db():
+    conn = sqlite3.connect("mandisaathi.db")
+    return conn
+`,
+      },
+      {
+        path: 'frontend/index.html',
+        language: 'HTML',
+        size: 600,
+        lineCount: 25,
+        content: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>Mandi Saathi Dashboard</h1>
+  <script src="js/app.js"></script>
+</body>
+</html>
+`,
+      },
+      {
+        path: 'frontend/css/style.css',
+        language: 'CSS',
+        size: 300,
+        lineCount: 12,
+        content: `
+body { margin: 0; background-color: #f0f0f0; }
+`,
+      },
+      {
+        path: 'frontend/js/app.js',
+        language: 'JavaScript',
+        size: 450,
+        lineCount: 18,
+        content: `
+fetch('/api/crops').then(res => res.json()).then(console.log);
+`,
+      },
+    ];
+
+    const manifest = parser.parseProject(multiLangFiles, multiLangFiles.map((f) => f.path));
+    const stackNames = manifest.stack.map((s) => s.name);
+
+    // Languages detected from real files
+    expect(stackNames).toContain('Python');
+    expect(stackNames).toContain('JavaScript');
+    expect(stackNames).toContain('HTML5');
+    expect(stackNames).toContain('CSS3');
+
+    // Frameworks and databases detected from code imports/calls
+    expect(stackNames).toContain('FastAPI');
+    expect(stackNames).toContain('SQLite');
+    expect(stackNames).toContain('Uvicorn');
+
+    // Verify grounded evidence paths
+    const pythonEntry = manifest.stack.find((s) => s.name === 'Python');
+    expect(pythonEntry?.evidencePath).toBe('backend/main.py');
+
+    const htmlEntry = manifest.stack.find((s) => s.name === 'HTML5');
+    expect(htmlEntry?.evidencePath).toBe('frontend/index.html');
+
+    // Verify nested entrypoints
+    const entryPaths = manifest.entryPoints.map((ep) => ep.path);
+    expect(entryPaths).toContain('backend/main.py');
+    expect(entryPaths).toContain('frontend/index.html');
+
+    const backendEp = manifest.entryPoints.find((ep) => ep.path === 'backend/main.py');
+    expect(backendEp?.type).toBe('backend');
+
+    const frontendEp = manifest.entryPoints.find((ep) => ep.path === 'frontend/index.html');
+    expect(frontendEp?.type).toBe('frontend');
+  });
 });

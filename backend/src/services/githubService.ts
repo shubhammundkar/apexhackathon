@@ -1,8 +1,18 @@
 import { RepositoryMetadata } from '@codebase-explainer/shared';
+import tar from 'tar-stream';
+import zlib from 'zlib';
+import { Readable } from 'stream';
 
 export interface GitHubRepoId {
   owner: string;
   repo: string;
+}
+
+export interface TarballOptions {
+  targetPaths?: Set<string>;
+  onFile?: (path: string, content: string) => Promise<void> | void;
+  maxFileSizeBytes?: number;
+  signal?: AbortSignal;
 }
 
 export interface GitHubTreeItem {
@@ -194,5 +204,127 @@ export class GitHubService {
     }
 
     throw new Error(`Unrecognized content encoding for file: ${filePath}`);
+  }
+
+  public async fetchTarball(
+    owner: string,
+    repo: string,
+    branch: string,
+    options?: TarballOptions
+  ): Promise<Map<string, string>> {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${encodeURIComponent(branch)}`;
+    const response = await fetch(apiUrl, {
+      headers: this.getHeaders(),
+      signal: options?.signal,
+      redirect: 'follow',
+    });
+
+    if (response.status === 401) {
+      throw new Error('GitHub authentication failed (HTTP 401). Please check the server GITHUB_TOKEN.');
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch repository archive for ${owner}/${repo}@${branch} (HTTP ${response.status})`);
+    }
+
+    if (!response.body) {
+      throw new Error(`Empty response body received for tarball of ${owner}/${repo}@${branch}`);
+    }
+
+    const extract = tar.extract();
+    const results = new Map<string, string>();
+    const maxBytes = options?.maxFileSizeBytes ?? 300000;
+    const targetSet = options?.targetPaths;
+
+    const streamPromise = new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const onError = (err: any) => {
+        if (!settled) {
+          settled = true;
+          reject(err);
+        }
+      };
+
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          onError(new Error('Tarball extraction aborted.'));
+        });
+      }
+
+      extract.on('entry', async (header, stream, next) => {
+        try {
+          const parts = header.name.split('/');
+          parts.shift(); // Remove the leading commit directory prefix
+          const relativePath = parts.join('/');
+          const cleanPath = relativePath.replace(/^(\.\/)+/, '').replace(/^\/+/, '');
+
+          const isTarget = targetSet ? (targetSet.has(cleanPath) || targetSet.has(relativePath)) : true;
+          const isSizeAcceptable = !header.size || header.size <= maxBytes;
+
+          if (header.type === 'file' && cleanPath && isTarget && isSizeAcceptable) {
+            const chunks: Buffer[] = [];
+            let totalBytes = 0;
+            let exceeded = false;
+
+            stream.on('data', (chunk: any) => {
+              const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+              totalBytes += buf.length;
+              if (totalBytes > maxBytes) {
+                exceeded = true;
+                stream.resume();
+              } else {
+                chunks.push(buf);
+              }
+            });
+
+            stream.on('end', async () => {
+              try {
+                if (!exceeded) {
+                  const content = Buffer.concat(chunks).toString('utf-8');
+                  results.set(cleanPath, content);
+                  if (options?.onFile) {
+                    try {
+                      await options.onFile(cleanPath, content);
+                    } catch (cbErr: any) {
+                      console.warn(`[GitHubService] onFile callback error for ${cleanPath}:`, cbErr.message);
+                    }
+                  }
+                }
+                next();
+              } catch (entryErr) {
+                next(entryErr as any);
+              }
+            });
+
+            stream.on('error', (err: any) => next(err));
+          } else {
+            stream.resume();
+            next();
+          }
+        } catch (err) {
+          next(err as any);
+        }
+      });
+
+      extract.on('finish', () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      });
+
+      extract.on('error', onError);
+
+      const nodeStream = Readable.fromWeb(response.body as any);
+      nodeStream.on('error', onError);
+
+      const gunzip = zlib.createGunzip();
+      gunzip.on('error', onError);
+
+      nodeStream.pipe(gunzip).pipe(extract);
+    });
+
+    await streamPromise;
+    return results;
   }
 }

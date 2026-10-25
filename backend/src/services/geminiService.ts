@@ -134,9 +134,9 @@ Respond ONLY with a valid JSON object matching this exact schema:
 {
   "overview": {
     "projectName": "${metadata.name}",
-    "tagline": "One-line summary of what this repository does",
-    "problemSolved": "Detailed description of the specific problem this project solves",
-    "detailedSummary": "Comprehensive multi-paragraph technical summary of the codebase",
+    "tagline": "One-line punchy summary of what this repository does",
+    "problemSolved": "In-depth, multi-paragraph explanation (at least 2-3 detailed paragraphs) of the specific real-world problem and domain challenges this project solves. Address: 1) What specific user pain points, domain traps, or operational inefficiencies exist in this domain; 2) Why naive or traditional alternatives fail; 3) How this specific codebase technically and algorithmically addresses the problem with concrete references to its modules, algorithms, and business logic.",
+    "detailedSummary": "Comprehensive, multi-paragraph technical summary (at least 3-4 rich paragraphs) of the codebase. Provide: 1) High-level system purpose, operational context, and architectural pattern; 2) Deep dive into core modules, calculations, and data processing pipelines; 3) Persistence, data structures, and state management mechanisms; 4) User interface, client-server communication, and runtime execution lifecycle.",
     "quickStartGuide": {
       "prerequisites": ["List of tools, runtimes, e.g. Node 18+, Python 3.10+"],
       "installCommands": ["Commands to install dependencies based on detected package manager/scripts"],
@@ -264,7 +264,13 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
     metadata: RepositoryMetadata,
     filePathFilter?: string,
     userApiKey?: string,
-    modelName?: string
+    modelName?: string,
+    extraContext?: {
+      detectedStack?: any[];
+      entryPoints?: any[];
+      architecturePattern?: string;
+      architectureDescription?: string;
+    }
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
     const chosenModel = modelName || this.defaultModel || 'gemini-3.5-flash';
@@ -282,6 +288,14 @@ QUESTION:
 ${question}
 
 ${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
+
+${extraContext?.detectedStack && extraContext.detectedStack.length > 0 ? `PROJECT STACK:
+Stack: ${extraContext.detectedStack.map((s: any) => s.name).join(', ')}` : ''}
+${extraContext?.entryPoints && extraContext.entryPoints.length > 0 ? `ENTRY POINTS:
+${extraContext.entryPoints.map((ep: any) => `${ep.path} (${ep.type || 'entry'})`).join(', ')}` : ''}
+${extraContext?.architecturePattern ? `ARCHITECTURE PATTERN: ${extraContext.architecturePattern}` : ''}
+${extraContext?.architectureDescription ? `ARCHITECTURE DESCRIPTION:
+${extraContext.architectureDescription}` : ''}
 
 RETRIEVED CODE EVIDENCE:
 ${evidenceText}
@@ -301,6 +315,23 @@ RULES:
    - Include a short summary only when useful.
    - Do not force headings or bullet points into every response; simple questions should receive simple, direct answers.
 6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+7. ARCHITECTURE & MERMAID DIAGRAM INSTRUCTIONS:
+   - When the user asks for an "architecture diagram", "flowchart", "diagram", "component graph", "visual flow", or asks how a specific file, component, backend, frontend, or feature interacts:
+   - You MUST generate a clear, professional, valid Mermaid.js diagram inside a \`\`\`mermaid ... \`\`\` code block.
+   - Diagram Structure & Quality:
+     * Use 'graph TD' (top-down) or 'graph LR' (left-to-right) for component architectures, or 'sequenceDiagram' for request/lifecycle flows.
+     * When diagramming a SPECIFIC FILE:
+       - Show external consumers/callers that import or invoke this file.
+       - Show the internal classes, methods, or functions inside this file and how they process data.
+       - Show downstream services, utilities, models, or APIs this file calls or writes to.
+     * When diagramming BACKEND, FRONTEND, or the WHOLE SYSTEM:
+       - Use clean logical subgraphs: e.g. subgraph "Frontend Layer", subgraph "API Routes / Controllers", subgraph "Core Services & Business Logic", subgraph "Store / Database / Cache".
+     * Strict Mermaid Syntax Rules:
+       - Every node text MUST be enclosed in double quotes: A["Node Title (details)"] — NEVER put raw parentheses or brackets directly in node IDs or labels without quotes!
+       - Keep node IDs simple alphanumeric: e.g. ClientUI["React App (LandingPage.tsx)"].
+       - Use descriptive labels on arrows: e.g. -->|"HTTP POST /analyze"|.
+     * Place this diagram prominently inside the "### 🟡 Low-Level Technical" section (or right at the start of your technical explanation) so it renders as an interactive visual diagram in the UI.
+     * Accompany the diagram with a clear explanation of each node and connection.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 
@@ -308,7 +339,7 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
 [Start with a short, direct answer in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
 
 ### 🟡 Low-Level Technical
-[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points and flows.]
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points, flows, and Mermaid diagrams where relevant.]
 
 ### 🟣 Deep Technical & Implementation
 [Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications with code blocks.]
@@ -351,7 +382,13 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
     onChunk: (chunk: string) => void,
     filePathFilter?: string,
     userApiKey?: string,
-    modelName?: string
+    modelName?: string,
+    extraContext?: {
+      detectedStack?: any[];
+      entryPoints?: any[];
+      architecturePattern?: string;
+      architectureDescription?: string;
+    }
   ): Promise<QAResponse> {
     const { client } = this.getClient(userApiKey);
     const chosenModel = modelName || this.defaultModel || 'gemini-3.5-flash';
@@ -369,6 +406,14 @@ QUESTION:
 ${question}
 
 ${filePathFilter ? `NOTE: The user is specifically focused on file: "${filePathFilter}"` : ''}
+
+${extraContext?.detectedStack && extraContext.detectedStack.length > 0 ? `PROJECT STACK:
+Stack: ${extraContext.detectedStack.map((s: any) => s.name).join(', ')}` : ''}
+${extraContext?.entryPoints && extraContext.entryPoints.length > 0 ? `ENTRY POINTS:
+${extraContext.entryPoints.map((ep: any) => `${ep.path} (${ep.type || 'entry'})`).join(', ')}` : ''}
+${extraContext?.architecturePattern ? `ARCHITECTURE PATTERN: ${extraContext.architecturePattern}` : ''}
+${extraContext?.architectureDescription ? `ARCHITECTURE DESCRIPTION:
+${extraContext.architectureDescription}` : ''}
 
 RETRIEVED CODE EVIDENCE:
 ${evidenceText}
@@ -388,6 +433,23 @@ RULES:
    - Include a short summary only when useful.
    - Do not force headings or bullet points into every response; simple questions should receive simple, direct answers.
 6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
+7. ARCHITECTURE & MERMAID DIAGRAM INSTRUCTIONS:
+   - When the user asks for an "architecture diagram", "flowchart", "diagram", "component graph", "visual flow", or asks how a specific file, component, backend, frontend, or feature interacts:
+   - You MUST generate a clear, professional, valid Mermaid.js diagram inside a \`\`\`mermaid ... \`\`\` code block.
+   - Diagram Structure & Quality:
+     * Use 'graph TD' (top-down) or 'graph LR' (left-to-right) for component architectures, or 'sequenceDiagram' for request/lifecycle flows.
+     * When diagramming a SPECIFIC FILE:
+       - Show external consumers/callers that import or invoke this file.
+       - Show the internal classes, methods, or functions inside this file and how they process data.
+       - Show downstream services, utilities, models, or APIs this file calls or writes to.
+     * When diagramming BACKEND, FRONTEND, or the WHOLE SYSTEM:
+       - Use clean logical subgraphs: e.g. subgraph "Frontend Layer", subgraph "API Routes / Controllers", subgraph "Core Services & Business Logic", subgraph "Store / Database / Cache".
+     * Strict Mermaid Syntax Rules:
+       - Every node text MUST be enclosed in double quotes: A["Node Title (details)"] — NEVER put raw parentheses or brackets directly in node IDs or labels without quotes!
+       - Keep node IDs simple alphanumeric: e.g. ClientUI["React App (LandingPage.tsx)"].
+       - Use descriptive labels on arrows: e.g. -->|"HTTP POST /analyze"|.
+     * Place this diagram prominently inside the "### 🟡 Low-Level Technical" section (or right at the start of your technical explanation) so it renders as an interactive visual diagram in the UI.
+     * Accompany the diagram with a clear explanation of each node and connection.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 
@@ -395,7 +457,7 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
 [Start with a short, direct answer in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
 
 ### 🟡 Low-Level Technical
-[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points and flows.]
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points, flows, and Mermaid diagrams where relevant.]
 
 ### 🟣 Deep Technical & Implementation
 [Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications with code blocks.]

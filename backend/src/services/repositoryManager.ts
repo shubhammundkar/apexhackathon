@@ -47,6 +47,7 @@ export interface IngestionJob {
 export class RepositoryManager {
   private activeRepositories: Map<string, RepositoryState> = new Map();
   private activeJobs: Map<string, IngestionJob> = new Map();
+  private lastStoreSyncMap: Map<string, number> = new Map();
   private githubService: GitHubService;
   private parserService: ParserService;
   private geminiService: GeminiService;
@@ -245,7 +246,8 @@ export class RepositoryManager {
     stage: IngestionStage,
     message: string,
     percent: number,
-    extra?: Partial<IngestionProgress>
+    extra?: Partial<IngestionProgress>,
+    forceSync = false
   ) {
     job.status = stage;
     job.progress = {
@@ -257,11 +259,24 @@ export class RepositoryManager {
     };
     job.updatedAt = new Date().toISOString();
 
-    await this.store.updateJob(job.jobId, {
-      status: job.status,
-      progress: job.progress,
-      updatedAt: job.updatedAt,
-    });
+    const now = Date.now();
+    const lastSync = this.lastStoreSyncMap.get(job.jobId) || 0;
+    const isStageBoundary = forceSync || stage === 'completed' || stage === 'failed' || percent >= 100 || stage !== job.progress.stage;
+
+    // Only hit remote DB at stage boundaries or once every 1200ms
+    if (isStageBoundary || now - lastSync >= 1200) {
+      this.lastStoreSyncMap.set(job.jobId, now);
+      // Non-blocking fire-and-forget so ingestion loop never stalls
+      Promise.resolve(
+        this.store.updateJob(job.jobId, {
+          status: job.status,
+          progress: job.progress,
+          updatedAt: job.updatedAt,
+        })
+      ).catch((err: any) => {
+        console.warn(`[RepositoryManager] Background progress sync notice:`, err.message);
+      });
+    }
   }
 
   private async processIngestion(
@@ -338,53 +353,105 @@ export class RepositoryManager {
       );
     }
 
-    // Step 5: Download Files with Bounded Concurrency
-    await this.updateJobProgress(job, 'downloading_files', `Downloading source files (0/${filesToFetch.length})...`, 40, {
+    // Step 5: Download Files with 1-Shot In-Memory Tarball Stream & Fallback
+    await this.updateJobProgress(job, 'downloading_files', `Initiating 1-shot in-memory archive stream for ${filesToFetch.length} files...`, 40, {
       totalFiles: filesToFetch.length,
       filesProcessed: 0,
       warnings,
     });
 
-    const downloadedFiles: SourceFile[] = [];
-    const concurrency = 6;
+    const downloadedMap = new Map<string, SourceFile>();
+    const targetPaths = new Set(filesToFetch.map((f) => f.path));
     let completedCount = 0;
 
-    for (let i = 0; i < filesToFetch.length; i += concurrency) {
-      if (job.abortController.signal.aborted) {
-        throw new Error('Analysis job was aborted.');
-      }
+    // Fast path: In-memory Tarball streaming (1 HTTP call for all files, zero disk I/O)
+    try {
+      await this.githubService.fetchTarball(owner, repo, branch, {
+        targetPaths,
+        maxFileSizeBytes: config.MAX_FILE_SIZE_BYTES,
+        signal: job.abortController.signal,
+        onFile: async (filePath, rawContent) => {
+          const { content } = redactSecrets(rawContent);
+          const language = detectLanguage(filePath);
+          const lineCount = content.split('\n').length;
 
-      const batch = filesToFetch.slice(i, i + concurrency);
-      await Promise.all(
-        batch.map(async (fileNode) => {
-          try {
-            const rawContent = await this.githubService.fetchRawFile(owner, repo, branch, fileNode.path);
-            const { content } = redactSecrets(rawContent);
-            const language = detectLanguage(fileNode.path);
-            const lineCount = content.split('\n').length;
+          downloadedMap.set(filePath, {
+            path: filePath,
+            content,
+            size: Buffer.byteLength(content, 'utf-8'),
+            language,
+            lineCount,
+          });
 
-            downloadedFiles.push({
-              path: fileNode.path,
-              content,
-              size: Buffer.byteLength(content, 'utf-8'),
-              language,
-              lineCount,
-            });
-          } catch (err: any) {
-            warnings.push(`Could not fetch file ${fileNode.path}: ${err.message}`);
-          } finally {
-            completedCount++;
-            const pct = Math.min(80, Math.round(40 + (completedCount / filesToFetch.length) * 40));
-            await this.updateJobProgress(job, 'downloading_files', `Downloading files (${completedCount}/${filesToFetch.length})...`, pct, {
+          completedCount++;
+          const pct = Math.min(80, Math.round(40 + (completedCount / filesToFetch.length) * 40));
+          await this.updateJobProgress(
+            job,
+            'downloading_files',
+            `Extracted ${completedCount}/${filesToFetch.length} files from stream...`,
+            pct,
+            {
               filesProcessed: completedCount,
               totalFiles: filesToFetch.length,
-              currentFile: fileNode.path,
+              currentFile: filePath,
               warnings,
-            });
-          }
-        })
-      );
+            }
+          );
+        },
+      });
+    } catch (tarErr: any) {
+      warnings.push(`Tarball archive streaming bypassed (${tarErr.message || 'fallback'}). Using direct fetch.`);
     }
+
+    // Resilient fallback: fetch any files not captured by tarball stream
+    const remainingFiles = filesToFetch.filter((f) => !downloadedMap.has(f.path));
+    if (remainingFiles.length > 0) {
+      const concurrency = 15;
+      for (let i = 0; i < remainingFiles.length; i += concurrency) {
+        if (job.abortController.signal.aborted) {
+          throw new Error('Analysis job was aborted.');
+        }
+
+        const batch = remainingFiles.slice(i, i + concurrency);
+        await Promise.all(
+          batch.map(async (fileNode) => {
+            try {
+              const rawContent = await this.githubService.fetchRawFile(owner, repo, branch, fileNode.path);
+              const { content } = redactSecrets(rawContent);
+              const language = detectLanguage(fileNode.path);
+              const lineCount = content.split('\n').length;
+
+              downloadedMap.set(fileNode.path, {
+                path: fileNode.path,
+                content,
+                size: Buffer.byteLength(content, 'utf-8'),
+                language,
+                lineCount,
+              });
+            } catch (err: any) {
+              warnings.push(`Could not fetch file ${fileNode.path}: ${err.message}`);
+            } finally {
+              completedCount++;
+              const pct = Math.min(80, Math.round(40 + (completedCount / filesToFetch.length) * 40));
+              await this.updateJobProgress(
+                job,
+                'downloading_files',
+                `Downloading files (${completedCount}/${filesToFetch.length})...`,
+                pct,
+                {
+                  filesProcessed: completedCount,
+                  totalFiles: filesToFetch.length,
+                  currentFile: fileNode.path,
+                  warnings,
+                }
+              );
+            }
+          })
+        );
+      }
+    }
+
+    const downloadedFiles: SourceFile[] = Array.from(downloadedMap.values());
 
     // Sort downloadedFiles deterministically by the ingestion priority order
     const priorityIndexMap = new Map(rankedNodes.map((n, idx) => [n.path, idx]));
@@ -597,8 +664,10 @@ export class RepositoryManager {
       overview: {
         projectName: metadata.name,
         tagline: metadata.description || `${metadata.name} open source project`,
-        problemSolved: metadata.description || `Software repository implementing ${metadata.primaryLanguage || 'code'} architecture.`,
-        detailedSummary: `Repository with ${files.length} indexed source files, primarily written in ${metadata.primaryLanguage || 'JavaScript/TypeScript'}. Uses ${manifest.packageManager || 'standard package tooling'}.`,
+        problemSolved: metadata.description 
+          ? `${metadata.description}\n\nThis system addresses key operational and architectural challenges in this domain by coordinating ${manifest.stack.map(s => s.name).join(', ') || metadata.primaryLanguage || 'multi-language'} components with dedicated entrypoints (${manifest.entryPoints.map(e => e.path).slice(0, 3).join(', ') || 'root modules'}).`
+          : `Provides an end-to-end software architecture for ${metadata.primaryLanguage || 'multi-language'} applications, automating core domain processing and service workflows.`,
+        detailedSummary: `${metadata.name} is a software project comprising ${files.length} indexed source files across ${Object.keys(this.calculateLanguageStats(files)).join(', ') || metadata.primaryLanguage || 'code'}.\n\nThe codebase is organized around primary entrypoints (${manifest.entryPoints.map((e) => e.path).join(', ') || 'source modules'}), providing structured execution, modular services, and data flows.\n\nDetected technologies and runtime tooling include ${manifest.stack.map((s) => s.name).join(', ') || 'standard libraries'}, managed with ${manifest.packageManager || 'project configuration'}.`,
         detectedStack: manifest.stack,
         entryPoints: manifest.entryPoints,
         quickStartGuide: {

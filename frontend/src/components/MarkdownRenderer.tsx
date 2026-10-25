@@ -14,6 +14,7 @@ import 'prismjs/components/prism-yaml.js';
 import 'prismjs/components/prism-markdown.js';
 import { SearchCitation } from '@codebase-explainer/shared';
 import { Copy, Check, FileCode } from 'lucide-react';
+import { MermaidDiagram } from './MermaidDiagram';
 
 interface MarkdownRendererProps {
   content: string;
@@ -88,7 +89,7 @@ function preprocessMarkdown(text: string): string {
       if (part.startsWith('```')) return part;
       return part.replace(
         /\[([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+):(\d+)(?:-(\d+))?\]/g,
-        (match, file, start, end) => {
+        (_match, file, start, end) => {
           const endLine = end || start;
           return `[${file}:${start}${end ? `-${end}` : ''}](#citation:${file}:${start}:${endLine})`;
         }
@@ -100,6 +101,14 @@ function preprocessMarkdown(text: string): string {
 const CodeBlock: React.FC<{ code: string; language?: string }> = ({ code, language = '' }) => {
   const [copied, setCopied] = useState(false);
   const cleanLang = language.toLowerCase().replace(/^language-/, '');
+
+  if (cleanLang === 'mermaid') {
+    return (
+      <div className="my-3 min-h-[340px] w-full rounded-xl overflow-hidden border border-surface-border bg-surface-subtle/40 shadow-sm">
+        <MermaidDiagram chart={code} />
+      </div>
+    );
+  }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);

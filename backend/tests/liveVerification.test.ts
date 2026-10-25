@@ -74,4 +74,17 @@ describe('Phase 11: Real Public GitHub Repository Ingestion Verification', () =>
     expect(citations[0].startLine).toBeGreaterThanOrEqual(1);
     expect(citations[0].endLine).toBeGreaterThanOrEqual(citations[0].startLine);
   }, 25000); // 25s timeout for network fetch
+
+  it('streams full repository in-memory via 1-shot tarball endpoint', async () => {
+    const { owner, repo } = github.parseRepoUrl('https://github.com/expressjs/cookie-parser');
+    const targetPaths = new Set(['package.json', 'index.js']);
+    const extracted = await github.fetchTarball(owner, repo, 'master', {
+      targetPaths,
+      maxFileSizeBytes: 300000,
+    });
+
+    expect(extracted.has('package.json')).toBe(true);
+    expect(extracted.has('index.js')).toBe(true);
+    expect(extracted.get('index.js')).toContain('cookieParser');
+  }, 20000);
 });

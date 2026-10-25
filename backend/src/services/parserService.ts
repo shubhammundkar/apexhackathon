@@ -30,7 +30,22 @@ export class ParserService {
    * Detects project dependencies, frameworks, entrypoints, and package managers
    */
   public parseProject(files: SourceFile[], allFilePaths: string[]): ParsedProjectManifest {
-    const stack: TechStackItem[] = [];
+    const stackMap = new Map<string, TechStackItem>();
+    const addStackItem = (item: TechStackItem) => {
+      const key = item.name.toLowerCase();
+      const existing = stackMap.get(key);
+      if (!existing) {
+        stackMap.set(key, item);
+      } else {
+        if (!existing.version && item.version) {
+          existing.version = item.version;
+        }
+        if ((!existing.evidencePath || existing.evidencePath.includes('extension')) && item.evidencePath) {
+          existing.evidencePath = item.evidencePath;
+        }
+      }
+    };
+
     const entryPoints: { path: string; description: string; type: 'frontend' | 'backend' | 'cli' | 'library' | 'worker' }[] = [];
     let packageManager: string | undefined;
     let hasLockfile = false;
@@ -38,32 +53,32 @@ export class ParserService {
     let dependencies: Record<string, string> = {};
     let devDependencies: Record<string, string> = {};
 
-    const pathSet = new Set(allFilePaths.map((p) => p.toLowerCase()));
+    const pathSet = new Set(allFilePaths.map((p) => p.toLowerCase().replace(/\\/g, '/')));
 
-    // Check lockfiles
-    if (pathSet.has('package-lock.json')) {
+    // Check lockfiles anywhere in repo
+    if (Array.from(pathSet).some((p) => p.endsWith('package-lock.json'))) {
       packageManager = 'npm';
       hasLockfile = true;
-    } else if (pathSet.has('yarn.lock')) {
+    } else if (Array.from(pathSet).some((p) => p.endsWith('yarn.lock'))) {
       packageManager = 'yarn';
       hasLockfile = true;
-    } else if (pathSet.has('pnpm-lock.yaml')) {
+    } else if (Array.from(pathSet).some((p) => p.endsWith('pnpm-lock.yaml'))) {
       packageManager = 'pnpm';
       hasLockfile = true;
-    } else if (pathSet.has('bun.lockb')) {
+    } else if (Array.from(pathSet).some((p) => p.endsWith('bun.lockb'))) {
       packageManager = 'bun';
       hasLockfile = true;
-    } else if (pathSet.has('cargo.lock')) {
+    } else if (Array.from(pathSet).some((p) => p.endsWith('cargo.lock'))) {
       packageManager = 'cargo';
       hasLockfile = true;
-    } else if (pathSet.has('poetry.lock')) {
+    } else if (Array.from(pathSet).some((p) => p.endsWith('poetry.lock') || p.endsWith('pipfile.lock'))) {
       packageManager = 'poetry';
       hasLockfile = true;
     }
 
-    // Parse package.json if present
-    const packageJsonFile = files.find((f) => f.path.toLowerCase() === 'package.json');
-    if (packageJsonFile) {
+    // Parse all package.json files (root and subdirectories like frontend/package.json or backend/package.json)
+    const packageJsonFiles = files.filter((f) => f.path.toLowerCase().replace(/\\/g, '/').endsWith('package.json'));
+    for (const packageJsonFile of packageJsonFiles) {
       try {
         const pkg = JSON.parse(packageJsonFile.content);
         if (!packageManager && pkg.packageManager) {
@@ -72,121 +87,228 @@ export class ParserService {
           packageManager = 'npm';
         }
 
-        scripts = pkg.scripts || {};
-        dependencies = pkg.dependencies || {};
-        devDependencies = pkg.devDependencies || {};
+        scripts = { ...scripts, ...(pkg.scripts || {}) };
+        dependencies = { ...dependencies, ...(pkg.dependencies || {}) };
+        devDependencies = { ...devDependencies, ...(pkg.devDependencies || {}) };
 
-        stack.push({ name: 'Node.js', category: 'runtime', confidence: 'detected', evidencePath: 'package.json' });
+        addStackItem({ name: 'Node.js', category: 'runtime', confidence: 'detected', evidencePath: packageJsonFile.path });
 
-        // Detect frameworks & libraries
-        const allDeps = { ...dependencies, ...devDependencies };
+        // Detect frameworks & libraries from package.json
+        const allDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 
         if (allDeps['react']) {
-          stack.push({ name: 'React', category: 'framework', version: allDeps['react'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'React', category: 'framework', version: allDeps['react'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['next']) {
-          stack.push({ name: 'Next.js', category: 'framework', version: allDeps['next'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Next.js', category: 'framework', version: allDeps['next'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['vue']) {
-          stack.push({ name: 'Vue.js', category: 'framework', version: allDeps['vue'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Vue.js', category: 'framework', version: allDeps['vue'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['express']) {
-          stack.push({ name: 'Express.js', category: 'framework', version: allDeps['express'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Express.js', category: 'framework', version: allDeps['express'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['fastify']) {
-          stack.push({ name: 'Fastify', category: 'framework', version: allDeps['fastify'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Fastify', category: 'framework', version: allDeps['fastify'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['@nestjs/core']) {
-          stack.push({ name: 'NestJS', category: 'framework', version: allDeps['@nestjs/core'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'NestJS', category: 'framework', version: allDeps['@nestjs/core'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['tailwindcss']) {
-          stack.push({ name: 'Tailwind CSS', category: 'tool', version: allDeps['tailwindcss'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Tailwind CSS', category: 'tool', version: allDeps['tailwindcss'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['typescript']) {
-          stack.push({ name: 'TypeScript', category: 'language', version: allDeps['typescript'], confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'TypeScript', category: 'language', version: allDeps['typescript'], confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['prisma'] || allDeps['@prisma/client']) {
-          stack.push({ name: 'Prisma ORM', category: 'database', confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'Prisma ORM', category: 'database', confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['mongoose'] || allDeps['mongodb']) {
-          stack.push({ name: 'MongoDB', category: 'database', confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'MongoDB', category: 'database', confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['pg'] || allDeps['typeorm']) {
-          stack.push({ name: 'PostgreSQL / SQL', category: 'database', confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: 'PostgreSQL / SQL', category: 'database', confidence: 'detected', evidencePath: packageJsonFile.path });
         }
         if (allDeps['vitest'] || allDeps['jest']) {
-          stack.push({ name: allDeps['vitest'] ? 'Vitest' : 'Jest', category: 'dev', confidence: 'detected', evidencePath: 'package.json' });
+          addStackItem({ name: allDeps['vitest'] ? 'Vitest' : 'Jest', category: 'dev', confidence: 'detected', evidencePath: packageJsonFile.path });
         }
       } catch {
         // Ignored if invalid JSON
       }
     }
 
-    // Python projects
-    const reqFile = files.find((f) => f.path.toLowerCase() === 'requirements.txt');
-    if (reqFile) {
-      stack.push({ name: 'Python', category: 'language', confidence: 'detected', evidencePath: 'requirements.txt' });
+    // Python projects: parse requirements.txt or pyproject.toml in root or subdirectories
+    const pythonManifests = files.filter((f) => {
+      const p = f.path.toLowerCase().replace(/\\/g, '/');
+      return p.endsWith('requirements.txt') || p.endsWith('pyproject.toml') || p.endsWith('pipfile') || p.endsWith('setup.py');
+    });
+
+    for (const reqFile of pythonManifests) {
+      addStackItem({ name: 'Python', category: 'language', confidence: 'detected', evidencePath: reqFile.path });
       const lines = reqFile.content.split('\n');
       for (const line of lines) {
         const trimmed = line.trim().toLowerCase();
-        if (trimmed.startsWith('django')) stack.push({ name: 'Django', category: 'framework', confidence: 'detected', evidencePath: 'requirements.txt' });
-        if (trimmed.startsWith('flask')) stack.push({ name: 'Flask', category: 'framework', confidence: 'detected', evidencePath: 'requirements.txt' });
-        if (trimmed.startsWith('fastapi')) stack.push({ name: 'FastAPI', category: 'framework', confidence: 'detected', evidencePath: 'requirements.txt' });
-        if (trimmed.startsWith('torch') || trimmed.startsWith('tensorflow')) stack.push({ name: 'PyTorch/TensorFlow', category: 'library', confidence: 'detected', evidencePath: 'requirements.txt' });
+        if (trimmed.startsWith('django')) addStackItem({ name: 'Django', category: 'framework', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('flask')) addStackItem({ name: 'Flask', category: 'framework', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('fastapi')) addStackItem({ name: 'FastAPI', category: 'framework', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('uvicorn')) addStackItem({ name: 'Uvicorn', category: 'runtime', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('torch') || trimmed.startsWith('tensorflow')) addStackItem({ name: 'PyTorch/TensorFlow', category: 'library', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('pydantic')) addStackItem({ name: 'Pydantic', category: 'library', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('sqlalchemy')) addStackItem({ name: 'SQLAlchemy', category: 'library', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('sqlite')) addStackItem({ name: 'SQLite', category: 'database', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('numpy')) addStackItem({ name: 'NumPy', category: 'library', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('pandas')) addStackItem({ name: 'Pandas', category: 'library', confidence: 'detected', evidencePath: reqFile.path });
+        if (trimmed.startsWith('pytest')) addStackItem({ name: 'PyTest', category: 'dev', confidence: 'detected', evidencePath: reqFile.path });
       }
     }
 
-    // Cargo / Rust
-    const cargoFile = files.find((f) => f.path.toLowerCase() === 'cargo.toml');
-    if (cargoFile) {
-      stack.push({ name: 'Rust', category: 'language', confidence: 'detected', evidencePath: 'cargo.toml' });
-      packageManager = 'cargo';
-      if (cargoFile.content.includes('axum')) stack.push({ name: 'Axum', category: 'framework', confidence: 'detected', evidencePath: 'cargo.toml' });
-      if (cargoFile.content.includes('actix-web')) stack.push({ name: 'Actix Web', category: 'framework', confidence: 'detected', evidencePath: 'cargo.toml' });
-      if (cargoFile.content.includes('tokio')) stack.push({ name: 'Tokio Async', category: 'library', confidence: 'detected', evidencePath: 'cargo.toml' });
+    // Cargo / Rust in any directory
+    const cargoFiles = files.filter((f) => f.path.toLowerCase().replace(/\\/g, '/').endsWith('cargo.toml'));
+    for (const cargoFile of cargoFiles) {
+      addStackItem({ name: 'Rust', category: 'language', confidence: 'detected', evidencePath: cargoFile.path });
+      if (!packageManager) packageManager = 'cargo';
+      if (cargoFile.content.includes('axum')) addStackItem({ name: 'Axum', category: 'framework', confidence: 'detected', evidencePath: cargoFile.path });
+      if (cargoFile.content.includes('actix-web')) addStackItem({ name: 'Actix Web', category: 'framework', confidence: 'detected', evidencePath: cargoFile.path });
+      if (cargoFile.content.includes('tokio')) addStackItem({ name: 'Tokio Async', category: 'library', confidence: 'detected', evidencePath: cargoFile.path });
     }
 
-    // Go
-    const goMod = files.find((f) => f.path.toLowerCase() === 'go.mod');
-    if (goMod) {
-      stack.push({ name: 'Go', category: 'language', confidence: 'detected', evidencePath: 'go.mod' });
-      packageManager = 'go modules';
-      if (goMod.content.includes('github.com/gin-gonic/gin')) stack.push({ name: 'Gin', category: 'framework', confidence: 'detected', evidencePath: 'go.mod' });
-      if (goMod.content.includes('github.com/gofiber/fiber')) stack.push({ name: 'Fiber', category: 'framework', confidence: 'detected', evidencePath: 'go.mod' });
+    // Go in any directory
+    const goModFiles = files.filter((f) => f.path.toLowerCase().replace(/\\/g, '/').endsWith('go.mod'));
+    for (const goMod of goModFiles) {
+      addStackItem({ name: 'Go', category: 'language', confidence: 'detected', evidencePath: goMod.path });
+      if (!packageManager) packageManager = 'go modules';
+      if (goMod.content.includes('github.com/gin-gonic/gin')) addStackItem({ name: 'Gin', category: 'framework', confidence: 'detected', evidencePath: goMod.path });
+      if (goMod.content.includes('github.com/gofiber/fiber')) addStackItem({ name: 'Fiber', category: 'framework', confidence: 'detected', evidencePath: goMod.path });
     }
 
-    // Docker detection
-    if (pathSet.has('dockerfile') || pathSet.has('docker-compose.yml') || pathSet.has('compose.yaml')) {
-      stack.push({ name: 'Docker', category: 'tool', confidence: 'detected', evidencePath: 'Dockerfile / Compose' });
+    // Comprehensive Language & Framework Detection from Real Repository Files
+    const langEvidence = new Map<string, string>();
+    for (const file of files) {
+      const normPath = file.path.toLowerCase().replace(/\\/g, '/');
+      const ext = normPath.split('.').pop() || '';
+
+      // Languages
+      if (ext === 'py' && !langEvidence.has('Python')) langEvidence.set('Python', file.path);
+      if ((ext === 'js' || ext === 'mjs' || ext === 'cjs') && !langEvidence.has('JavaScript')) langEvidence.set('JavaScript', file.path);
+      if ((ext === 'ts' || ext === 'mts' || ext === 'cts') && !langEvidence.has('TypeScript')) langEvidence.set('TypeScript', file.path);
+      if ((ext === 'html' || ext === 'htm') && !langEvidence.has('HTML5')) langEvidence.set('HTML5', file.path);
+      if ((ext === 'css' || ext === 'scss' || ext === 'sass' || ext === 'less') && !langEvidence.has('CSS3')) langEvidence.set('CSS3', file.path);
+      if ((ext === 'sql' || ext === 'sqlite' || ext === 'sqlite3' || ext === 'db') && !langEvidence.has('SQLite / SQL')) langEvidence.set('SQLite / SQL', file.path);
+      if ((ext === 'sh' || ext === 'bash') && !langEvidence.has('Shell Script')) langEvidence.set('Shell Script', file.path);
+      if (ext === 'rs' && !langEvidence.has('Rust')) langEvidence.set('Rust', file.path);
+      if (ext === 'go' && !langEvidence.has('Go')) langEvidence.set('Go', file.path);
+      if (ext === 'java' && !langEvidence.has('Java')) langEvidence.set('Java', file.path);
+
+      // Deep inspection of code content for frameworks and libraries
+      if (ext === 'py') {
+        const content = file.content;
+        if (/from\s+fastapi|import\s+fastapi/i.test(content)) {
+          addStackItem({ name: 'FastAPI', category: 'framework', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/import\s+uvicorn|uvicorn\.run/i.test(content)) {
+          addStackItem({ name: 'Uvicorn', category: 'runtime', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/from\s+flask|import\s+flask/i.test(content)) {
+          addStackItem({ name: 'Flask', category: 'framework', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/from\s+django|import\s+django/i.test(content)) {
+          addStackItem({ name: 'Django', category: 'framework', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/sqlite3(?:\.connect|:)/i.test(content) || normPath.includes('database.py') && content.includes('sqlite')) {
+          addStackItem({ name: 'SQLite', category: 'database', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/from\s+pydantic|import\s+pydantic/i.test(content)) {
+          addStackItem({ name: 'Pydantic', category: 'library', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/from\s+sqlalchemy|import\s+sqlalchemy/i.test(content)) {
+          addStackItem({ name: 'SQLAlchemy', category: 'library', confidence: 'detected', evidencePath: file.path });
+        }
+      }
+
+      if (ext === 'js' || ext === 'ts' || ext === 'jsx' || ext === 'tsx') {
+        const content = file.content;
+        if (/from\s+['"]react['"]|require\(['"]react['"]\)/i.test(content)) {
+          addStackItem({ name: 'React', category: 'framework', confidence: 'detected', evidencePath: file.path });
+        }
+        if (/from\s+['"]express['"]|require\(['"]express['"]\)/i.test(content)) {
+          addStackItem({ name: 'Express.js', category: 'framework', confidence: 'detected', evidencePath: file.path });
+        }
+      }
     }
 
-    // Detect Entrypoints
+    // Add detected languages to stack with grounded evidence paths
+    for (const [lang, evPath] of langEvidence.entries()) {
+      addStackItem({
+        name: lang,
+        category: lang.includes('SQL') ? 'database' : lang.includes('Shell') ? 'tool' : 'language',
+        confidence: 'detected',
+        evidencePath: evPath,
+      });
+    }
+
+    // Docker detection anywhere in repo
+    const hasDocker = Array.from(pathSet).some((p) => p.endsWith('dockerfile') || p.endsWith('docker-compose.yml') || p.endsWith('compose.yaml'));
+    if (hasDocker) {
+      addStackItem({ name: 'Docker', category: 'tool', confidence: 'detected', evidencePath: 'Dockerfile / Compose' });
+    }
+
+    // Detect Entrypoints supporting nested folder structures (e.g. backend/main.py, frontend/index.html)
     const candidateEntrypoints = [
-      { pattern: /^(src\/)?(index|main|server|app)\.(ts|js|mjs)$/i, desc: 'Application main entry point', type: 'backend' as const },
-      { pattern: /^(src\/)?(main|index|App)\.(tsx|jsx)$/i, desc: 'Frontend application root component / entry', type: 'frontend' as const },
-      { pattern: /^(app|src\/app)\/page\.(tsx|jsx|js)$/i, desc: 'Next.js root page entry point', type: 'frontend' as const },
-      { pattern: /^(main|app|manage)\.py$/i, desc: 'Python application script or entry point', type: 'backend' as const },
-      { pattern: /^(cmd\/.*\/)?main\.go$/i, desc: 'Go binary entry point', type: 'backend' as const },
-      { pattern: /^src\/main\.rs$/i, desc: 'Rust binary root entry point', type: 'backend' as const },
-      { pattern: /^src\/lib\.rs$/i, desc: 'Rust library crate root', type: 'library' as const },
-      { pattern: /^bin\/[a-zA-Z0-9_-]+$/i, desc: 'CLI executable script', type: 'cli' as const },
+      { pattern: /(?:^|\/)(?:backend\/|src\/|server\/|app\/|api\/)?(index|main|server|app|run)\.(ts|js|mjs)$/i, desc: 'Application main entry point', type: 'backend' as const },
+      { pattern: /(?:^|\/)(?:frontend\/|client\/|web\/|src\/)?(main|index|App)\.(tsx|jsx)$/i, desc: 'Frontend application root component / entry', type: 'frontend' as const },
+      { pattern: /(?:^|\/)(?:app|src\/app)\/page\.(tsx|jsx|js)$/i, desc: 'Next.js root page entry point', type: 'frontend' as const },
+      { pattern: /(?:^|\/)(?:frontend\/|client\/|web\/|public\/|static\/)?(index|main)\.html$/i, desc: 'Frontend HTML document entry point', type: 'frontend' as const },
+      { pattern: /(?:^|\/)(?:backend\/|src\/|server\/|app\/|api\/)?(main|app|manage|run|server|wsgi|asgi)\.py$/i, desc: 'Python application script or entry point', type: 'backend' as const },
+      { pattern: /(?:^|\/)(?:cmd\/.*\/)?main\.go$/i, desc: 'Go binary entry point', type: 'backend' as const },
+      { pattern: /(?:^|\/)(?:src\/)?main\.rs$/i, desc: 'Rust binary root entry point', type: 'backend' as const },
+      { pattern: /(?:^|\/)(?:src\/)?lib\.rs$/i, desc: 'Rust library crate root', type: 'library' as const },
+      { pattern: /(?:^|\/)bin\/[a-zA-Z0-9_-]+$/i, desc: 'CLI executable script', type: 'cli' as const },
     ];
 
+    const matchedEntryPaths = new Set<string>();
     for (const file of files) {
+      const normPath = file.path.replace(/\\/g, '/');
       for (const candidate of candidateEntrypoints) {
-        if (candidate.pattern.test(file.path.replace(/\\/g, '/'))) {
+        if (candidate.pattern.test(normPath)) {
           entryPoints.push({
             path: file.path,
             description: candidate.desc,
             type: candidate.type,
           });
+          matchedEntryPaths.add(normPath);
+          break;
+        }
+      }
+    }
+
+    // Content-based entry point fallback if none found
+    if (entryPoints.length === 0) {
+      for (const file of files) {
+        const normPath = file.path.replace(/\\/g, '/');
+        if (matchedEntryPaths.has(normPath)) continue;
+        if (normPath.endsWith('.py') && (file.content.includes("if __name__ == '__main__':") || file.content.includes('FastAPI(') || file.content.includes('Flask('))) {
+          entryPoints.push({
+            path: file.path,
+            description: 'Python application execution entrypoint',
+            type: 'backend',
+          });
+          matchedEntryPaths.add(normPath);
+          break;
+        }
+        if (normPath.endsWith('.html')) {
+          entryPoints.push({
+            path: file.path,
+            description: 'Web document user entrypoint',
+            type: 'frontend',
+          });
+          matchedEntryPaths.add(normPath);
           break;
         }
       }
     }
 
     return {
-      stack,
+      stack: Array.from(stackMap.values()),
       packageManager,
       hasLockfile,
       entryPoints,

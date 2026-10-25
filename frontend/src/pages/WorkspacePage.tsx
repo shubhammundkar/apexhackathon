@@ -7,6 +7,7 @@ import {
   SourceFile,
   FileAnalysis,
   SearchCitation,
+  TechStackItem,
 } from '@codebase-explainer/shared';
 import { FileTree } from '../components/FileTree';
 import { CodeViewer } from '../components/CodeViewer';
@@ -356,6 +357,69 @@ export const WorkspacePage: React.FC = () => {
     return Array.from(set).sort();
   }, [allFilesList]);
 
+  // Detected Tech Stack with dynamic fallback from file tree & language stats
+  const displayStack = React.useMemo<TechStackItem[]>(() => {
+    if (analysis?.overview.detectedStack && analysis.overview.detectedStack.length > 0) {
+      return analysis.overview.detectedStack;
+    }
+    const stackItems: TechStackItem[] = [];
+    if (analysis?.stats?.languages) {
+      for (const [lang] of Object.entries(analysis.stats.languages)) {
+        if (!stackItems.some((s) => s.name.toLowerCase() === lang.toLowerCase())) {
+          stackItems.push({
+            name: lang,
+            category: lang.toLowerCase().includes('sql') ? 'database' : 'language',
+            confidence: 'detected',
+            evidencePath: 'Repository file tree',
+          });
+        }
+      }
+    }
+    if (allFilesList.length > 0) {
+      const paths = allFilesList.map((f) => f.path.toLowerCase().replace(/\\/g, '/'));
+      if (paths.some((p) => p.endsWith('.py')) && !stackItems.some((s) => s.name === 'Python')) {
+        stackItems.push({ name: 'Python', category: 'language', confidence: 'detected', evidencePath: 'backend files' });
+      }
+      if (paths.some((p) => p.endsWith('.js') || p.endsWith('.mjs') || p.endsWith('.cjs')) && !stackItems.some((s) => s.name === 'JavaScript')) {
+        stackItems.push({ name: 'JavaScript', category: 'language', confidence: 'detected', evidencePath: 'source scripts' });
+      }
+      if (paths.some((p) => p.endsWith('.ts')) && !stackItems.some((s) => s.name === 'TypeScript')) {
+        stackItems.push({ name: 'TypeScript', category: 'language', confidence: 'detected', evidencePath: 'source files' });
+      }
+      if (paths.some((p) => p.endsWith('.html') || p.endsWith('.htm')) && !stackItems.some((s) => s.name === 'HTML5')) {
+        stackItems.push({ name: 'HTML5', category: 'language', confidence: 'detected', evidencePath: 'frontend documents' });
+      }
+      if (paths.some((p) => p.endsWith('.css') || p.endsWith('.scss')) && !stackItems.some((s) => s.name === 'CSS3')) {
+        stackItems.push({ name: 'CSS3', category: 'language', confidence: 'detected', evidencePath: 'stylesheets' });
+      }
+      if (paths.some((p) => p.includes('sqlite') || p.endsWith('.db') || p.endsWith('.sql')) && !stackItems.some((s) => s.name.includes('SQLite'))) {
+        stackItems.push({ name: 'SQLite', category: 'database', confidence: 'detected', evidencePath: 'database storage' });
+      }
+    }
+    return stackItems;
+  }, [analysis, allFilesList]);
+
+  // Execution Entry Points with dynamic fallback from file tree
+  const displayEntryPoints = React.useMemo(() => {
+    if (analysis?.overview.entryPoints && analysis.overview.entryPoints.length > 0) {
+      return analysis.overview.entryPoints;
+    }
+    const eps: { path: string; description: string; type: 'frontend' | 'backend' | 'cli' | 'library' | 'worker' }[] = [];
+    if (allFilesList.length > 0) {
+      for (const file of allFilesList) {
+        const p = file.path.toLowerCase().replace(/\\/g, '/');
+        if (p.endsWith('main.py') || p.endsWith('app.py') || p.endsWith('server.py')) {
+          eps.push({ path: file.path, description: 'Application backend execution entry point', type: 'backend' });
+        } else if (p.endsWith('index.html')) {
+          eps.push({ path: file.path, description: 'Frontend HTML document entry point', type: 'frontend' });
+        } else if (p.endsWith('index.ts') || p.endsWith('index.js') || p.endsWith('server.ts') || p.endsWith('server.js')) {
+          eps.push({ path: file.path, description: 'Application runtime service entry point', type: 'backend' });
+        }
+      }
+    }
+    return eps;
+  }, [analysis, allFilesList]);
+
   const handleAskQuestion = async (
     question: string,
     filePath?: string,
@@ -598,57 +662,89 @@ export const WorkspacePage: React.FC = () => {
                 <p className="text-sm font-medium text-primary-600 dark:text-primary-300">
                   {analysis.overview.tagline}
                 </p>
-                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {analysis.overview.detailedSummary}
-                </p>
+                <div className="space-y-3 pt-1">
+                  {analysis.overview.detailedSummary
+                    .split(/\n\s*\n/)
+                    .filter((p) => p.trim().length > 0)
+                    .map((paragraph, idx) => (
+                      <p key={idx} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {paragraph.trim()}
+                      </p>
+                    ))}
+                </div>
               </div>
 
               {/* Problem Solved */}
-              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-2 shadow-sm">
+              <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                   Problem Solved
                 </h3>
-                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {analysis.overview.problemSolved}
-                </p>
+                <div className="space-y-3">
+                  {analysis.overview.problemSolved
+                    .split(/\n\s*\n/)
+                    .filter((p) => p.trim().length > 0)
+                    .map((paragraph, idx) => (
+                      <p key={idx} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {paragraph.trim()}
+                      </p>
+                    ))}
+                </div>
               </div>
 
               {/* Detected Tech Stack */}
               <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
-                  Detected Technology Stack
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {analysis.overview.detectedStack.map((tech) => (
-                    <TechStackBadge key={tech.name} item={tech} />
-                  ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
+                    Detected Technology Stack
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {displayStack.length} detected
+                  </span>
                 </div>
+                {displayStack.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {displayStack.map((tech) => (
+                      <TechStackBadge key={tech.name} item={tech} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic py-1">No technology stack dependencies detected.</p>
+                )}
               </div>
 
               {/* Verified Entry Points */}
               <div className="bg-surface border border-surface-border rounded-xl p-6 space-y-3 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
-                  Execution Entry Points
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {analysis.overview.entryPoints.map((ep) => (
-                    <div
-                      key={ep.path}
-                      onClick={() => handleNavigateToFile(ep.path)}
-                      className="p-3.5 rounded-lg bg-surface-subtle border border-surface-border hover:border-primary-500/40 cursor-pointer transition-colors group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400 group-hover:underline truncate">
-                          {ep.path}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-primary-700 dark:text-primary-300 border border-primary-500/30">
-                          {ep.type}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{ep.description}</p>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
+                    Execution Entry Points
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {displayEntryPoints.length} verified
+                  </span>
                 </div>
+                {displayEntryPoints.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {displayEntryPoints.map((ep) => (
+                      <div
+                        key={ep.path}
+                        onClick={() => handleNavigateToFile(ep.path)}
+                        className="p-3.5 rounded-lg bg-surface-subtle border border-surface-border hover:border-primary-500/40 cursor-pointer transition-colors group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400 group-hover:underline truncate">
+                            {ep.path}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-primary-500/10 dark:bg-primary-600/20 text-primary-700 dark:text-primary-300 border border-primary-500/30">
+                            {ep.type}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{ep.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic py-1">No execution entry points detected.</p>
+                )}
               </div>
 
               {/* Quick Start Guide */}
