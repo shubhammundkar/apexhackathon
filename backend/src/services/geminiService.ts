@@ -271,19 +271,27 @@ RULES:
 2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
 3. Cite only line ranges that lie inside the evidence blocks shown.
 4. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
-5. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+5. Response formatting & organization:
+   - Provide a short, direct answer first.
+   - Explicitly highlight key factors, core technologies, and architectural decisions using bold text (e.g. **Key Factor:** or **ConceptName**) so crucial takeaways stand out immediately.
+   - Use clear subheadings (e.g. ### Heading) only when needed to organize distinct topics.
+   - Use concise bullet points for multiple items and numbered steps for procedures or sequential flows.
+   - Wrap code, variables, and file names in inline backticks (e.g. \`main.ts\`, \`startServer()\`).
+   - Use fenced code blocks with language tags (e.g. \`\`\`typescript ... \`\`\`) for all code snippets.
+   - Include a short summary only when useful.
+   - Do not force headings or bullet points into every response; simple questions should receive simple, direct answers.
 6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 
 ### 🟢 Beginner Overview
-[Explain simply in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
+[Start with a short, direct answer in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
 
 ### 🟡 Low-Level Technical
-[Explain the software architecture, component relationships, function flows, data transformations, and system roles.]
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points and flows.]
 
 ### 🟣 Deep Technical & Implementation
-[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
+[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications with code blocks.]
 `;
 
     let lastError: any = null;
@@ -350,19 +358,27 @@ RULES:
 2. When referencing code, cite the exact file path and line numbers using the format: [path/to/file:startLine-endLine].
 3. Cite only line ranges that lie inside the evidence blocks shown.
 4. If the evidence does not contain enough information to answer definitively, state honestly what is known and what cannot be determined from the retrieved files.
-5. Provide clear, professional, well-formatted Markdown with syntax-highlighted code blocks where helpful.
+5. Response formatting & organization:
+   - Provide a short, direct answer first.
+   - Explicitly highlight key factors, core technologies, and architectural decisions using bold text (e.g. **Key Factor:** or **ConceptName**) so crucial takeaways stand out immediately.
+   - Use clear subheadings (e.g. ### Heading) only when needed to organize distinct topics.
+   - Use concise bullet points for multiple items and numbered steps for procedures or sequential flows.
+   - Wrap code, variables, and file names in inline backticks (e.g. \`main.ts\`, \`startServer()\`).
+   - Use fenced code blocks with language tags (e.g. \`\`\`typescript ... \`\`\`) for all code snippets.
+   - Include a short summary only when useful.
+   - Do not force headings or bullet points into every response; simple questions should receive simple, direct answers.
 6. If the user asks for line-by-line breakdown or feature contribution guide, refer directly to the actual files and functions shown above.
 
 STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI can provide interactive perspective tabs:
 
 ### 🟢 Beginner Overview
-[Explain simply in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
+[Start with a short, direct answer in plain English with real-world analogies. Avoid jargon so anyone can understand what this does and why.]
 
 ### 🟡 Low-Level Technical
-[Explain the software architecture, component relationships, function flows, data transformations, and system roles.]
+[Explain the software architecture, component relationships, function flows, data transformations, and system roles using concise bullet points and flows.]
 
 ### 🟣 Deep Technical & Implementation
-[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications.]
+[Provide deep code-level walkthrough, exact function mechanics, citations to [file:startLine-endLine], edge cases, and performance/security implications with code blocks.]
 `;
 
     let lastError: any = null;

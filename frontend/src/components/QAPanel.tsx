@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SearchCitation, QAResponse, RetrievalStats } from '@codebase-explainer/shared';
 import { apiClient } from '../api/client';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   Send,
   Sparkles,
@@ -49,9 +50,9 @@ function parseTieredContent(text: string): {
   lowLevel?: string;
   deepTechnical?: string;
 } {
-  const beginnerRegex = /###\s*(?:🟢\s*)?Beginner(?:[\s\w()]+)?\s*([\s\S]*?)(?=###\s*(?:🟡|🟣|\w)|$)/i;
-  const lowLevelRegex = /###\s*(?:🟡\s*)?Low-Level(?:[\s\w()]+)?\s*([\s\S]*?)(?=###\s*(?:🟣|\w)|$)/i;
-  const deepTechRegex = /###\s*(?:🟣\s*)?Deep\s*Technical(?:[\s\w()&]+)?\s*([\s\S]*?)(?=###|$)/i;
+  const beginnerRegex = /#{2,4}\s*(?:🟢\s*)?Beginner(?:[\s\w()]+)?\s*([\s\S]*?)(?=#{2,4}\s*(?:🟡|🟣|\w)|$)/i;
+  const lowLevelRegex = /#{2,4}\s*(?:🟡\s*)?Low-Level(?:[\s\w()]+)?\s*([\s\S]*?)(?=#{2,4}\s*(?:🟣|\w)|$)/i;
+  const deepTechRegex = /#{2,4}\s*(?:🟣\s*)?Deep\s*Technical(?:[\s\w()&]+)?\s*([\s\S]*?)(?=#{2,4}|$)/i;
 
   const beginnerMatch = text.match(beginnerRegex);
   const lowLevelMatch = text.match(lowLevelRegex);
@@ -381,8 +382,8 @@ export const QAPanel: React.FC<QAPanelProps> = ({
                     </div>
                   )}
 
-                  {msg.sender === 'user' ? (
-                    <div className="whitespace-pre-wrap font-sans">{displayText}</div>
+{msg.sender === 'user' ? (
+                    <div className="whitespace-pre-wrap font-sans break-words">{msg.content}</div>
                   ) : (
                     <MarkdownRenderer
                       content={displayText}
