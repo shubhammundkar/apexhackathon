@@ -231,8 +231,11 @@ export function redactSecrets(content: string): { content: string; hasRedactions
     /(?:api[_-]?key|apikey|secret|token|password|auth|private[_-]?key)\s*[:=]\s*['"][a-zA-Z0-9_\-.~+/=]{8,}['"]/gi,
     /ghp_[a-zA-Z0-9]{36}/g,
     /gho_[a-zA-Z0-9]{36}/g,
-    /AIza[0-9A-Za-z-_]{20,}/g,
+    /github_pat_[a-zA-Z0-9_]{50,100}/g,
+    /xox[baprs]-[0-9a-zA-Z]{10,48}/g,
+    /AIza[0-9A-Za-z-_]{16,}/g,
     /AKIA[0-9A-Z]{16}/g,
+    /mongodb(?:\+srv)?:\/\/[^:\s]+:[^@\s]+@[a-zA-Z0-9.-]+/gi,
     /-----BEGIN\s+PRIVATE\s+KEY-----[\s\S]*?-----END\s+PRIVATE\s+KEY-----/g,
     /-----BEGIN\s+RSA\s+PRIVATE\s+KEY-----[\s\S]*?-----END\s+RSA\s+PRIVATE\s+KEY-----/g,
   ];

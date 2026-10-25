@@ -21,6 +21,17 @@ export interface AnalysisGenerationResult {
 }
 
 /**
+ * Sanitizes any error message to ensure API keys, tokens, or credentials are never leaked in logs or errors
+ */
+function sanitizeError(err: any): string {
+  const msg = err?.message || String(err || 'Unknown error');
+  return msg
+    .replace(/AIza[0-9A-Za-z-_]{20,}/g, '[REDACTED_API_KEY]')
+    .replace(/key=[a-zA-Z0-9_\-]+/gi, 'key=[REDACTED]')
+    .replace(/Bearer\s+[a-zA-Z0-9_\-.]+/gi, 'Bearer [REDACTED]');
+}
+
+/**
  * Formats retrieved SearchCitations into an LLM evidence block.
  * Each block shows "[EVIDENCE #n] path (lines a-b) kind symbolName"
  * and every code line is prefixed with its original file line number.
@@ -217,14 +228,12 @@ DO NOT wrap in markdown backticks other than valid JSON. Return pure JSON.
         };
       } catch (err: any) {
         lastError = err;
-        console.warn(`[GeminiService] Model ${modelToUse} failed in generateRepositoryAnalysis: ${err.message || err}. Trying fallback...`);
+        console.warn(`[GeminiService] Model ${modelToUse} failed in generateRepositoryAnalysis: ${sanitizeError(err)}. Trying fallback...`);
       }
     }
 
-    throw new Error(`Gemini API Error: ${lastError?.message || lastError}`);
+    throw new Error(`Gemini API Error: ${sanitizeError(lastError)}`);
   }
-
-
 
   /**
    * Answers natural language questions grounded strictly in retrieved source citations
@@ -297,11 +306,11 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
         };
       } catch (err: any) {
         lastError = err;
-        console.warn(`[GeminiService] Model ${modelToUse} failed in answerQuestion: ${err.message || err}. Trying fallback...`);
+        console.warn(`[GeminiService] Model ${modelToUse} failed in answerQuestion: ${sanitizeError(err)}. Trying fallback...`);
       }
     }
 
-    throw new Error(`Gemini Q&A Error: ${lastError?.message || lastError}`);
+    throw new Error(`Gemini Q&A Error: ${sanitizeError(lastError)}`);
   }
 
   /**
@@ -383,10 +392,10 @@ STRUCTURE YOUR ANSWER IN 3 TIERS using these exact markdown headings so the UI c
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`[GeminiService] Streaming with model ${modelToUse} failed: ${err.message || err}. Trying fallback...`);
+        console.warn(`[GeminiService] Streaming with model ${modelToUse} failed: ${sanitizeError(err)}. Trying fallback...`);
       }
     }
 
-    throw new Error(`Gemini Streaming Error: ${lastError?.message || lastError}`);
+    throw new Error(`Gemini Streaming Error: ${sanitizeError(lastError)}`);
   }
 }

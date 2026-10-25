@@ -2,7 +2,20 @@ import crypto from 'crypto';
 import { StoredUserRecord } from '../store/repositoryStore.js';
 import { config } from '../config.js';
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'codebase-explainer-ai-secret-key-3.5-turbo-secure';
+// High-entropy ephemeral secret generated in-memory once per process in non-production environments
+// This avoids having any hardcoded secret string in source code while remaining zero-config in development/tests.
+const ephemeralDevSecret = crypto.randomBytes(32).toString('hex');
+
+export function getAuthSecret(): string {
+  const configured = config.AUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  if (configured && configured.length >= 16) {
+    return configured;
+  }
+  if (config.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET must be configured with at least 16 characters in production environments.');
+  }
+  return ephemeralDevSecret;
+}
 
 export interface TokenPayload {
   userId: string;
@@ -49,7 +62,7 @@ export function createToken(user: StoredUserRecord): string {
 
   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto
-    .createHmac('sha256', AUTH_SECRET)
+    .createHmac('sha256', getAuthSecret())
     .update(payloadBase64)
     .digest('base64url');
 
@@ -66,7 +79,7 @@ export function verifyToken(token: string): TokenPayload | null {
 
     const [payloadBase64, signature] = parts;
     const expectedSignature = crypto
-      .createHmac('sha256', AUTH_SECRET)
+      .createHmac('sha256', getAuthSecret())
       .update(payloadBase64)
       .digest('base64url');
 

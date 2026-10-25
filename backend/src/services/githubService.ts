@@ -31,6 +31,10 @@ export class GitHubService {
   public parseRepoUrl(url: string): GitHubRepoId {
     try {
       const parsed = new URL(url.trim());
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        throw new Error(`Unsupported protocol: ${parsed.protocol}. Only http: and https: are supported.`);
+      }
+
       if (parsed.hostname !== 'github.com' && parsed.hostname !== 'www.github.com') {
         throw new Error(`Unsupported host: ${parsed.hostname}. Only github.com is supported.`);
       }
@@ -75,6 +79,10 @@ export class GitHubService {
   public async fetchMetadata(owner: string, repo: string): Promise<RepositoryMetadata> {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
     const response = await fetch(apiUrl, { headers: this.getHeaders() });
+
+    if (response.status === 401) {
+      throw new Error('GitHub authentication failed (HTTP 401). Please check the server GITHUB_TOKEN.');
+    }
 
     if (response.status === 404) {
       throw new Error(`Repository "${owner}/${repo}" was not found or is private.`);
@@ -136,6 +144,10 @@ export class GitHubService {
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
     const response = await fetch(apiUrl, { headers: this.getHeaders() });
 
+    if (response.status === 401) {
+      throw new Error('GitHub authentication failed (HTTP 401). Please check the server GITHUB_TOKEN.');
+    }
+
     if (!response.ok) {
       throw new Error(`Failed to fetch file tree for ${owner}/${repo}@${branch} (HTTP ${response.status})`);
     }
@@ -167,6 +179,11 @@ export class GitHubService {
     // Fallback: GitHub Contents API
     const contentUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${encodeURIComponent(branch)}`;
     const apiRes = await fetch(contentUrl, { headers: this.getHeaders() });
+
+    if (apiRes.status === 401) {
+      throw new Error('GitHub authentication failed (HTTP 401). Please check the server GITHUB_TOKEN.');
+    }
+
     if (!apiRes.ok) {
       throw new Error(`Failed to retrieve file ${filePath} (HTTP ${apiRes.status})`);
     }

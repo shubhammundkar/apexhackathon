@@ -31,6 +31,7 @@ const EnvSchema = z.object({
   MAX_STORED_REPOS: z.coerce.number().default(20),
   DB_PATH: z.string().optional(),
   MONGODB_URI: z.string().optional().default(''),
+  AUTH_SECRET: z.string().optional().default(''),
 
   // Adaptive Q&A Retrieval
   RETRIEVAL_POOL: z.coerce.number().positive().default(40),
@@ -90,6 +91,7 @@ export function getConfigSummary() {
     geminiModel: config.GEMINI_MODEL,
     githubTokenConfigured: Boolean(config.GITHUB_TOKEN && config.GITHUB_TOKEN.length > 5),
     mongodbConfigured: Boolean(config.MONGODB_URI && config.MONGODB_URI.length > 5),
+    authSecretConfigured: Boolean(config.AUTH_SECRET && config.AUTH_SECRET.length >= 16),
     maxRepoFiles: config.MAX_REPO_FILES,
     maxFileSizeBytes: config.MAX_FILE_SIZE_BYTES,
     maxStoredRepos: config.MAX_STORED_REPOS,

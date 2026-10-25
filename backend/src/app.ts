@@ -19,10 +19,10 @@ export function createApp() {
   app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
   }));
 
-  // Rate Limiting: 200 requests per 15 minutes per IP
+  // General API Rate Limiting: 300 requests per 15 minutes per IP
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
@@ -34,6 +34,20 @@ export function createApp() {
     },
   });
   app.use('/api', limiter);
+
+  // Authentication Rate Limiting: 30 attempts per 15 minutes per IP (Brute-force protection)
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'AUTH_RATE_LIMIT_EXCEEDED',
+      message: 'Too many authentication attempts from this IP, please try again after 15 minutes.',
+    },
+  });
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
 
   // Request parsing with limits
   app.use(express.json({ limit: '5mb' }));
@@ -74,22 +88,25 @@ export function createApp() {
     });
   });
 
-  // Global centralized error handler
+  // Global centralized error handler with secret redaction
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = typeof err.status === 'number' && err.status >= 400 && err.status < 600 ? err.status : 500;
     const isClientError = status < 500;
 
-    // Redact any potential API keys from error messages
+    // Redact any potential API keys, passwords, or tokens from error messages
     let safeMessage = err.message || 'An internal server error occurred';
-    safeMessage = safeMessage.replace(/([a-zA-Z0-9_\-]{20,})/g, (match: string) => {
-      if (match.toLowerCase().includes('token') || match.toLowerCase().includes('key')) {
-        return '[REDACTED]';
-      }
-      return match;
-    });
+    safeMessage = safeMessage
+      .replace(/AIza[0-9A-Za-z-_]{16,}/g, '[REDACTED]')
+      .replace(/ghp_[a-zA-Z0-9]{36}/g, '[REDACTED]')
+      .replace(/gho_[a-zA-Z0-9]{36}/g, '[REDACTED]')
+      .replace(/github_pat_[a-zA-Z0-9_]{50,100}/g, '[REDACTED]')
+      .replace(/AKIA[0-9A-Z]{16}/g, '[REDACTED]')
+      .replace(/mongodb(?:\+srv)?:\/\/[^\s@]+@/gi, 'mongodb$1://[REDACTED]@')
+      .replace(/key=[a-zA-Z0-9_\-]+/gi, 'key=[REDACTED]')
+      .replace(/Bearer\s+[a-zA-Z0-9_\-.]+/gi, 'Bearer [REDACTED]');
 
     if (status >= 500) {
-      console.error('[SERVER ERROR]', err);
+      console.error('[SERVER ERROR]', safeMessage);
     }
 
     res.status(status).json({
