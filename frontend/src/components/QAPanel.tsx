@@ -15,7 +15,6 @@ import {
   X,
   Database,
 } from 'lucide-react';
-import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface QAPanelProps {
   onAskQuestion: (
